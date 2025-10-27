@@ -1,18 +1,13 @@
 package pe.edu.upc.groups_service.groups.domain.model.aggregates;
 
-import jakarta.persistence.AttributeOverride;
-import jakarta.persistence.Column;
-import jakarta.persistence.Embedded;
-import jakarta.persistence.Entity;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.springframework.lang.Nullable;
 import pe.edu.upc.groups_service.groups.domain.model.commands.UpdateGroupCommand;
 import pe.edu.upc.groups_service.groups.domain.model.valueobjects.GroupCode;
 import pe.edu.upc.groups_service.groups.domain.model.valueobjects.ImgUrl;
-import pe.edu.upc.groups_service.groups.domain.model.valueobjects.LeaderId;
 import pe.edu.upc.groups_service.shared.domain.model.aggregates.AuditableAbstractAggregateRoot;
 
 @Entity
@@ -35,19 +30,17 @@ public class Group extends AuditableAbstractAggregateRoot<Group> {
   @Embedded
   private ImgUrl imgUrl;
 
-  @Nullable
-  @Setter
-  @Embedded
-  @AttributeOverride(name = "leaderId.value", column = @Column(name = "leader_id"))
-  private LeaderId leaderId;
+  @OneToOne
+  @JoinColumn(name = "leader_id")
+  private Leader leader;
 
   @NotNull
   private Integer memberCount;
 
-  public Group(String name, String description, String imgUrl , LeaderId leaderId, GroupCode code) {
+  public Group(String name, String description, String imgUrl , Leader leader, GroupCode code) {
     this.name = name;
     this.imgUrl = new ImgUrl(imgUrl);
-    this.leaderId = leaderId;
+    this.leader = leader;
     this.description = description;
     this.memberCount = 0;
     this.code = code;

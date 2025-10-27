@@ -12,9 +12,8 @@ import pe.edu.upc.groups_service.shared.domain.model.aggregates.AuditableAbstrac
 @Getter
 public class Invitation extends AuditableAbstractAggregateRoot<Invitation> {
   @Nullable
-  @Setter
   @Embedded
-  @AttributeOverride(name = "memberId.value", column = @Column(name = "member_id"))
+  @AttributeOverride(name = "value", column = @Column(name = "member_id"))
   private MemberId memberId;
 
   @ManyToOne

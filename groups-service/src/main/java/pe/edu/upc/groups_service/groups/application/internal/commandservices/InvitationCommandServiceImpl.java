@@ -57,8 +57,7 @@ public class InvitationCommandServiceImpl implements InvitationCommandService {
     var leader = this.leaderRepository.findById(leaderId)
         .orElseThrow(() -> new IllegalArgumentException("Leader with id " + leaderId + " does not exist"));
 
-    assert invitation.getGroup().getLeaderId() != null;
-    if (!invitation.getGroup().getLeaderId().value().equals(leader.getId())) {
+    if (!invitation.getGroup().getLeader().getId().equals(leader.getId())) {
       throw new IllegalArgumentException("Leader with id " + leaderId + " is not the owner of the invitation");
     }
 

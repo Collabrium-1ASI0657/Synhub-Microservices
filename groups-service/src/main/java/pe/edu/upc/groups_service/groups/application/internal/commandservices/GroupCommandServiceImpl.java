@@ -2,7 +2,6 @@ package pe.edu.upc.groups_service.groups.application.internal.commandservices;
 
 import org.springframework.stereotype.Service;
 import pe.edu.upc.groups_service.groups.domain.model.aggregates.Group;
-import pe.edu.upc.groups_service.groups.domain.model.aggregates.Leader;
 import pe.edu.upc.groups_service.groups.domain.model.commands.*;
 import pe.edu.upc.groups_service.groups.domain.model.valueobjects.GroupCode;
 import pe.edu.upc.groups_service.groups.domain.model.valueobjects.LeaderId;
@@ -26,18 +25,13 @@ public class GroupCommandServiceImpl implements GroupCommandService {
 
   @Override
   public Optional<Group> handle(CreateGroupCommand command) {
-    var leader = leaderRepository.findById(command.leaderId());
-    if (!leaderRepository.existsById(command.leaderId())) {
-      throw new IllegalArgumentException("Leader with id " + command.leaderId() + " does not exist");
-    }
-
-    var leaderId = new LeaderId(command.leaderId());
+    var leader = leaderRepository.findById(command.leaderId()).get();
 
     Group group = new Group(
         command.name(),
         command.description(),
         command.imgUrl(),
-        leaderId,
+        leader,
         GroupCode.random()
     );
     while( groupRepository.existsByCode(group.getCode())) {
