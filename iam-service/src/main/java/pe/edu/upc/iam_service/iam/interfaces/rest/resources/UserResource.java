@@ -9,7 +9,7 @@ public record UserResource(
     String surname,
     String imgUrl,
     String email,
-    UserLeaderResource leaderId,
-    UserMemberResource memberId,
+    UserLeaderResource leader,
+    UserMemberResource member,
     List<String> roles) {
 }
