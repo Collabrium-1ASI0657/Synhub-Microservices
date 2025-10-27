@@ -7,10 +7,8 @@ import pe.edu.upc.iam_service.iam.application.internal.outboundservices.events.L
 import pe.edu.upc.iam_service.iam.application.internal.outboundservices.hashing.HashingService;
 import pe.edu.upc.iam_service.iam.application.internal.outboundservices.tokens.TokenService;
 import pe.edu.upc.iam_service.iam.domain.model.aggregates.User;
-import pe.edu.upc.iam_service.iam.domain.model.commands.CreateUserLeaderCommand;
-import pe.edu.upc.iam_service.iam.domain.model.commands.CreateUserMemberCommand;
-import pe.edu.upc.iam_service.iam.domain.model.commands.SignInCommand;
-import pe.edu.upc.iam_service.iam.domain.model.commands.SignUpCommand;
+import pe.edu.upc.iam_service.iam.domain.model.commands.*;
+import pe.edu.upc.iam_service.iam.domain.model.valueobjects.LeaderId;
 import pe.edu.upc.iam_service.iam.domain.services.UserCommandService;
 import pe.edu.upc.iam_service.iam.infrastructure.authorization.sfs.model.UserDetailsImpl;
 import pe.edu.upc.iam_service.iam.infrastructure.persistence.jpa.repositories.RoleRepository;
@@ -117,7 +115,7 @@ public class UserCommandServiceImpl implements UserCommandService {
     }
     var user = userRepository.findById(userId);
     try {
-      leaderPublisher.publishLeaderCreated();
+      leaderPublisher.publishLeaderCreated(userId);
     } catch (Exception e) {
       throw new RuntimeException("Error while creating leader: " + e.getMessage());
     }
@@ -128,5 +126,28 @@ public class UserCommandServiceImpl implements UserCommandService {
   @Override
   public Optional<User> handle(CreateUserMemberCommand command) {
     return Optional.empty();
+  }
+
+  @Override
+  public Optional<User> handle(UpdateUserLeaderIdCommand command) {
+    var userOptional = userRepository.findById(command.userId());
+
+    if (userOptional.isEmpty()) {
+      System.err.println("User not found for update: " + command.userId());
+      return Optional.empty();
+    }
+
+    var user = userOptional.get();
+
+    try {
+      LeaderId newLeaderId = new LeaderId(command.leaderId());
+      user.setLeaderId(newLeaderId);
+      userRepository.save(user);
+
+      return Optional.of(user);
+    } catch (IllegalArgumentException e) {
+      System.err.println("Invalid Leader ID received: " + e.getMessage());
+      return Optional.empty();
+    }
   }
 }

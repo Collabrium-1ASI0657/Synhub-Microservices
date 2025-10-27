@@ -30,7 +30,7 @@ public class InvitationController {
   private final InvitationCommandService invitationCommandService;
   private final LeaderQueryService leaderQueryService;
   private final GroupQueryService groupQueryService;
-  private static final Logger logger = LoggerFactory.getLogger(InvitationController.class);
+//  private static final Logger logger = LoggerFactory.getLogger(InvitationController.class);
 
   public InvitationController(InvitationQueryService invitationQueryService,
                               InvitationCommandService invitationCommandService,

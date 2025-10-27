@@ -5,5 +5,5 @@ import pe.edu.upc.groups_service.groups.application.clients.iam.resources.UserRe
 import java.util.Optional;
 
 public interface IamServiceClient {
-  Optional<UserResource> fetchUserByUsername(String username);
+  Optional<UserResource> fetchUserByUsername(String username, String authorizationHeader);
 }

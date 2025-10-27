@@ -18,9 +18,11 @@ public class LeaderCreatedEventListener {
 
   @RabbitListener(queues = RabbitMQConfig.QUEUE_LEADER_CREATED)
   public void handleLeaderCreatedEvent(LeaderCreatedEvent event) {
+    Long leaderUserId = event.userId();
+
     System.out.println("📩 Received LeaderCreatedEvent from IAM");
 
-    var createLeaderCommand = new CreateLeaderCommand();
+    var createLeaderCommand = new CreateLeaderCommand(leaderUserId);
 
     leaderCommandService.handle(createLeaderCommand);
   }
