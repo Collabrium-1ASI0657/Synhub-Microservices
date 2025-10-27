@@ -13,12 +13,15 @@ public class UserResourceFromEntityAssembler {
         .map(Role::getStringName)
         .toList();
 
-    // Crear instancias de los recursos
     UserLeaderResource leaderResource = user.getLeaderId() != null ?
-        new UserLeaderResource(user.getLeaderId().value()) : null;
+        new UserLeaderResource(
+            user.getLeaderId().value(),
+            "string",
+            0) : null;
 
     UserMemberResource memberResource = user.getMemberId() != null ?
-        new UserMemberResource(user.getMemberId().value()) : null;
+        new UserMemberResource(user.getMemberId().value(),
+            0L) : null;
 
     return new UserResource(
         user.getId(),
