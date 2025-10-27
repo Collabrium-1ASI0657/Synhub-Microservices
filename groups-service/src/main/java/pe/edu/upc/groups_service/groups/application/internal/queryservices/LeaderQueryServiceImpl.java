@@ -2,6 +2,7 @@ package pe.edu.upc.groups_service.groups.application.internal.queryservices;
 
 import org.springframework.stereotype.Service;
 import pe.edu.upc.groups_service.groups.application.clients.iam.IamServiceClient;
+import pe.edu.upc.groups_service.groups.application.dto.LeaderWithUserInfo;
 import pe.edu.upc.groups_service.groups.domain.model.aggregates.Leader;
 import pe.edu.upc.groups_service.groups.domain.model.queries.GetLeaderByIdQuery;
 import pe.edu.upc.groups_service.groups.domain.model.queries.GetLeaderByUsernameQuery;
@@ -28,19 +29,29 @@ public class LeaderQueryServiceImpl implements LeaderQueryService {
   }
 
   @Override
-  public Optional<Leader> handle(GetLeaderByUsernameQuery query) {
-    var user = iamServiceClient.fetchUserByUsername(query.username());
-    var role = user.get().roles().stream().findFirst().get();
+  public Optional<LeaderWithUserInfo> handle(GetLeaderByUsernameQuery query, String authorizationHeader) {
+    var userOptional = iamServiceClient.fetchUserByUsername(query.username(), authorizationHeader);
+    if (userOptional.isEmpty()) {
+      return Optional.empty();
+    }
+    var user = userOptional.get();
+    var primaryRoleOptional = user.roles().stream().findFirst();
+    if (primaryRoleOptional.isEmpty()) {
+      return Optional.empty();
+    }
 
+    var role = primaryRoleOptional.get();
     if (!role.equals("ROLE_LEADER")) {
       return Optional.empty();
     }
 
-    var leader = leaderRepository.findById(user.get().leaderId().id());
+    var leader = leaderRepository.findById(user.leaderId().id());
     if (leader.isEmpty()) {
       return Optional.empty();
     }
 
-    return leader;
+    var leaderWithUserInfo = new LeaderWithUserInfo(leader.get(), user);
+
+    return Optional.of(leaderWithUserInfo);
   }
 }

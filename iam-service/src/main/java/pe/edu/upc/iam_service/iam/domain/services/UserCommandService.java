@@ -2,10 +2,7 @@ package pe.edu.upc.iam_service.iam.domain.services;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import pe.edu.upc.iam_service.iam.domain.model.aggregates.User;
-import pe.edu.upc.iam_service.iam.domain.model.commands.CreateUserLeaderCommand;
-import pe.edu.upc.iam_service.iam.domain.model.commands.CreateUserMemberCommand;
-import pe.edu.upc.iam_service.iam.domain.model.commands.SignInCommand;
-import pe.edu.upc.iam_service.iam.domain.model.commands.SignUpCommand;
+import pe.edu.upc.iam_service.iam.domain.model.commands.*;
 
 import java.util.Optional;
 
@@ -36,4 +33,6 @@ public interface UserCommandService {
    * @return user
    */
   Optional<User> handle(CreateUserMemberCommand command);
+
+  Optional<User> handle(UpdateUserLeaderIdCommand command);
 }

@@ -14,8 +14,8 @@ public class LeaderPublisher {
     this.eventPublisher = eventPublisher;
   }
 
-  public void publishLeaderCreated() {
-    LeaderCreatedEvent event = new LeaderCreatedEvent();
+  public void publishLeaderCreated(Long userId) {
+    LeaderCreatedEvent event = new LeaderCreatedEvent(userId);
     eventPublisher.publishEvent(RabbitMQConfig.ROUTING_KEY_LEADER_CREATED, event);
   }
 }
