@@ -31,9 +31,9 @@ public class LeaderQueryServiceImpl implements LeaderQueryService {
   @Override
   public Optional<LeaderWithUserInfo> handle(GetLeaderByUsernameQuery query, String authorizationHeader) {
     var userOptional = iamServiceClient.fetchUserByUsername(query.username(), authorizationHeader);
-//    if (userOptional.isEmpty()) {
-//      return Optional.empty();
-//    }
+    if (userOptional.isEmpty()) {
+      return Optional.empty();
+    }
     var user = userOptional.get();
     var primaryRoleOptional = user.roles().stream().findFirst();
     if (primaryRoleOptional.isEmpty()) {
