@@ -1,4 +1,4 @@
-package pe.edu.upc.iam_service.iam.interfaces.rest.transform;
+package pe.edu.upc.iam_service.iam.interfaces.rest;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.MediaType;
@@ -11,6 +11,7 @@ import pe.edu.upc.iam_service.iam.domain.model.queries.GetAllUsersQuery;
 import pe.edu.upc.iam_service.iam.domain.model.queries.GetUserByIdQuery;
 import pe.edu.upc.iam_service.iam.domain.services.UserQueryService;
 import pe.edu.upc.iam_service.iam.interfaces.rest.resources.UserResource;
+import pe.edu.upc.iam_service.iam.interfaces.rest.transform.UserResourceFromEntityAssembler;
 
 import java.util.List;
 
