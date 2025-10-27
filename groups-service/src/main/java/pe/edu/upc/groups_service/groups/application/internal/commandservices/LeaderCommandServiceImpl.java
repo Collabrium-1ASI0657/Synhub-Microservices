@@ -25,7 +25,9 @@ public class LeaderCommandServiceImpl implements LeaderCommandService {
     leaderRepository.save(leader);
     iamEventPublisher.publishLeaderCreatedSuccessfully(
         command.leaderUserId(),
-        leader.getId()
+        leader.getId(),
+        leader.getAverageSolutionTime(),
+        leader.getSolvedRequests()
     );
     return Optional.of(leader);
   }
