@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.lang.Nullable;
+import pe.edu.upc.groups_service.groups.domain.model.commands.UpdateGroupCommand;
 import pe.edu.upc.groups_service.groups.domain.model.valueobjects.GroupCode;
 import pe.edu.upc.groups_service.groups.domain.model.valueobjects.ImgUrl;
 import pe.edu.upc.groups_service.groups.domain.model.valueobjects.LeaderId;
@@ -52,9 +53,9 @@ public class Group extends AuditableAbstractAggregateRoot<Group> {
     this.code = code;
   }
 
-//  public void updateInformation(UpdateGroupCommand command) {
-//    this.name = command.name().isEmpty() ? this.name : command.name();
-//    this.description = command.description().isEmpty() ? this.description : command.description();
-//    this.imgUrl = command.imgUrl().isEmpty() ? this.imgUrl : new ImgUrl(command.imgUrl());
-//  }
+  public void updateInformation(UpdateGroupCommand command) {
+    this.name = command.name().isEmpty() ? this.name : command.name();
+    this.description = command.description().isEmpty() ? this.description : command.description();
+    this.imgUrl = command.imgUrl().isEmpty() ? this.imgUrl : new ImgUrl(command.imgUrl());
+  }
 }
