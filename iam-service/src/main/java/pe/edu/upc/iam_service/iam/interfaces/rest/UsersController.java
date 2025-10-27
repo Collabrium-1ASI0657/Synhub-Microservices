@@ -1,16 +1,15 @@
-package pe.edu.upc.iam_service.iam.interfaces.rest.transform;
+package pe.edu.upc.iam_service.iam.interfaces.rest;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import pe.edu.upc.iam_service.iam.domain.model.queries.GetAllUsersQuery;
 import pe.edu.upc.iam_service.iam.domain.model.queries.GetUserByIdQuery;
+import pe.edu.upc.iam_service.iam.domain.model.queries.GetUserByUsernameQuery;
 import pe.edu.upc.iam_service.iam.domain.services.UserQueryService;
 import pe.edu.upc.iam_service.iam.interfaces.rest.resources.UserResource;
+import pe.edu.upc.iam_service.iam.interfaces.rest.transform.UserResourceFromEntityAssembler;
 
 import java.util.List;
 
@@ -45,6 +44,24 @@ public class UsersController {
         .map(UserResourceFromEntityAssembler::toResourceFromEntity)
         .toList();
     return ResponseEntity.ok(userResources);
+  }
+
+  /**
+   * This method returns the user with the given username.
+   *
+   * @param username the username.
+   * @return the user resource with the given username
+   * @see UserResource
+   */
+  @GetMapping(params = "username")
+  public ResponseEntity<UserResource> getUserByUsername(@RequestParam String username) {
+    var getUserByUsernameQuery = new GetUserByUsernameQuery(username);
+    var user = userQueryService.handle(getUserByUsernameQuery);
+    if (user.isEmpty()) {
+      return ResponseEntity.notFound().build();
+    }
+    var userResource = UserResourceFromEntityAssembler.toResourceFromEntity(user.get());
+    return ResponseEntity.ok(userResource);
   }
 
   /**
