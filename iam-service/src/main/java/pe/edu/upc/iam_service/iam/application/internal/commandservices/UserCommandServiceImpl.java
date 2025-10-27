@@ -3,6 +3,7 @@ package pe.edu.upc.iam_service.iam.application.internal.commandservices;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Service;
+import pe.edu.upc.iam_service.iam.application.internal.outboundservices.events.LeaderPublisher;
 import pe.edu.upc.iam_service.iam.application.internal.outboundservices.hashing.HashingService;
 import pe.edu.upc.iam_service.iam.application.internal.outboundservices.tokens.TokenService;
 import pe.edu.upc.iam_service.iam.domain.model.aggregates.User;
@@ -30,12 +31,18 @@ public class UserCommandServiceImpl implements UserCommandService {
   private final UserRepository userRepository;
   private final HashingService hashingService;
   private final TokenService tokenService;
+  private final LeaderPublisher leaderPublisher;
 
-  public UserCommandServiceImpl(RoleRepository roleRepository, UserRepository userRepository, HashingService hashingService, TokenService tokenService) {
+  public UserCommandServiceImpl(RoleRepository roleRepository,
+                                UserRepository userRepository,
+                                HashingService hashingService,
+                                TokenService tokenService,
+                                LeaderPublisher leaderPublisher) {
     this.roleRepository = roleRepository;
     this.userRepository = userRepository;
     this.hashingService = hashingService;
     this.tokenService = tokenService;
+    this.leaderPublisher = leaderPublisher;
   }
 
   /**
@@ -104,7 +111,18 @@ public class UserCommandServiceImpl implements UserCommandService {
 
   @Override
   public Optional<User> handle(CreateUserLeaderCommand command) {
-    return Optional.empty();
+    var userId = command.userId();
+    if(userRepository.findById(userId).isEmpty()){
+      throw new RuntimeException("User not found");
+    }
+    var user = userRepository.findById(userId);
+    try {
+      leaderPublisher.publishLeaderCreated();
+    } catch (Exception e) {
+      throw new RuntimeException("Error while creating leader: " + e.getMessage());
+    }
+
+    return user;
   }
 
   @Override
