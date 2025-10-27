@@ -45,7 +45,7 @@ public class LeaderQueryServiceImpl implements LeaderQueryService {
       return Optional.empty();
     }
 
-    var leader = leaderRepository.findById(user.leaderId().id());
+    var leader = leaderRepository.findById(user.leader().id());
     if (leader.isEmpty()) {
       return Optional.empty();
     }
