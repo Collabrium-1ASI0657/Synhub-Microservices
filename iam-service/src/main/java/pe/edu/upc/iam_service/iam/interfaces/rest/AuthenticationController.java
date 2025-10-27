@@ -8,15 +8,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import pe.edu.upc.iam_service.iam.domain.model.commands.CreateUserLeaderCommand;
 import pe.edu.upc.iam_service.iam.domain.services.UserCommandService;
 import pe.edu.upc.iam_service.iam.interfaces.rest.resources.AuthenticatedUserResource;
 import pe.edu.upc.iam_service.iam.interfaces.rest.resources.SignInResource;
 import pe.edu.upc.iam_service.iam.interfaces.rest.resources.SignUpResource;
 import pe.edu.upc.iam_service.iam.interfaces.rest.resources.UserResource;
-import pe.edu.upc.iam_service.iam.interfaces.rest.transform.AuthenticatedUserResourceFromEntityAssembler;
-import pe.edu.upc.iam_service.iam.interfaces.rest.transform.SignInCommandFromResourceAssembler;
-import pe.edu.upc.iam_service.iam.interfaces.rest.transform.SignUpCommandFromResourceAssembler;
-import pe.edu.upc.iam_service.iam.interfaces.rest.transform.UserResourceFromEntityAssembler;
+import pe.edu.upc.iam_service.iam.interfaces.rest.transform.*;
 
 /**
  * AuthenticationController
@@ -77,15 +75,18 @@ public class AuthenticationController {
 
     var role = user.get().getRoles().stream().findFirst().get().getName().toString();
 
-
     if(role.equals("ROLE_LEADER")){
+      var createUserLeaderCommand = CreateUserLeaderCommandFromResourceAssembler.toCommandFromResource(user.get().getId());
+      user = userCommandService.handle(createUserLeaderCommand);
+      if (user.isEmpty()) {
+        return ResponseEntity.badRequest().build();
+      }
       System.out.println("Soy un LEADER");
     }
 
     if(role.equals("ROLE_MEMBER")){
       System.out.println("Soy un MEMBER");
     }
-
 
     var userResource = UserResourceFromEntityAssembler.toResourceFromEntity(user.get());
     return new ResponseEntity<>(userResource, HttpStatus.CREATED);
