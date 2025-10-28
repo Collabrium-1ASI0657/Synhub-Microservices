@@ -5,12 +5,14 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pe.edu.upc.groups_service.groups.domain.model.commands.CreateGroupCommand;
+import pe.edu.upc.groups_service.groups.domain.model.commands.UpdateGroupCommand;
 import pe.edu.upc.groups_service.groups.domain.model.queries.GetLeaderByUsernameQuery;
 import pe.edu.upc.groups_service.groups.domain.services.GroupCommandService;
 import pe.edu.upc.groups_service.groups.domain.services.GroupQueryService;
 import pe.edu.upc.groups_service.groups.domain.services.LeaderQueryService;
 import pe.edu.upc.groups_service.groups.interfaces.rest.resources.CreateGroupResource;
 import pe.edu.upc.groups_service.groups.interfaces.rest.resources.GroupResource;
+import pe.edu.upc.groups_service.groups.interfaces.rest.resources.UpdateGroupResource;
 import pe.edu.upc.groups_service.groups.interfaces.rest.transform.GroupResourceFromEntityAssembler;
 
 @RestController
@@ -52,4 +54,30 @@ public class LeaderGroupController {
     var groupResourceCreated = GroupResourceFromEntityAssembler.toResourceFromEntity(group.get());
     return ResponseEntity.ok(groupResourceCreated);
   }
+
+  @PutMapping
+  @Operation(summary = "Update a group", description = "Updates a group")
+  public ResponseEntity<GroupResource> updateGroup(@RequestBody UpdateGroupResource groupResource,
+                                                   @RequestHeader("X-Username") String username,
+                                                   @RequestHeader("Authorization") String authorizationHeader) {
+    var getLeaderByUsernameQuery = new GetLeaderByUsernameQuery(username);
+    var leaderWithUserInfo = this.leaderQueryService.handle(getLeaderByUsernameQuery, authorizationHeader);
+    if (leaderWithUserInfo.isEmpty()) return ResponseEntity.notFound().build();
+
+    var updateGroupCommand = new UpdateGroupCommand(
+        leaderWithUserInfo.get().leader().getId(),
+        groupResource.name(),
+        groupResource.description(),
+        groupResource.imgUrl()
+    );
+
+    var group = this.groupCommandService.handle(updateGroupCommand);
+    if (group.isEmpty()) return ResponseEntity.notFound().build();
+    var groupResourceUpdated = GroupResourceFromEntityAssembler.toResourceFromEntity(group.get());
+
+    return ResponseEntity.ok(groupResourceUpdated);
+  }
+
+
+
 }

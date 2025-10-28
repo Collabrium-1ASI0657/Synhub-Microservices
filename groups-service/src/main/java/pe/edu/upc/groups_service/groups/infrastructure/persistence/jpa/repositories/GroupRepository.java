@@ -11,7 +11,7 @@ import java.util.Optional;
 @Repository
 public interface GroupRepository extends JpaRepository<Group, Long> {
 
-  Optional<Group> findByLeaderId(LeaderId leaderId);
+  Optional<Group> findByLeaderId(Long leader_id);
 
   boolean existsByCode(GroupCode code);
 
