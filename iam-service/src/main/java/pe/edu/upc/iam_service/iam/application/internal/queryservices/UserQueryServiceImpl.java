@@ -1,6 +1,8 @@
 package pe.edu.upc.iam_service.iam.application.internal.queryservices;
 
 import org.springframework.stereotype.Service;
+import pe.edu.upc.iam_service.iam.application.internal.clients.groups.GroupsServiceClient;
+import pe.edu.upc.iam_service.iam.application.internal.clients.groups.resources.UserWithLeaderResource;
 import pe.edu.upc.iam_service.iam.domain.model.aggregates.User;
 import pe.edu.upc.iam_service.iam.domain.model.queries.*;
 import pe.edu.upc.iam_service.iam.domain.model.valueobjects.LeaderId;
@@ -17,14 +19,16 @@ import java.util.Optional;
 @Service
 public class UserQueryServiceImpl implements UserQueryService {
   private final UserRepository userRepository;
+  private final GroupsServiceClient groupsServiceClient;
 
   /**
    * Constructor.
    *
    * @param userRepository {@link UserRepository} instance.
    */
-  public UserQueryServiceImpl(UserRepository userRepository) {
+  public UserQueryServiceImpl(UserRepository userRepository, GroupsServiceClient groupsServiceClient) {
     this.userRepository = userRepository;
+    this.groupsServiceClient = groupsServiceClient;
   }
 
   /**
@@ -80,5 +84,19 @@ public class UserQueryServiceImpl implements UserQueryService {
   @Override
   public Optional<User> handle(GetUserByLeaderIdQuery query) {
     return userRepository.findByLeaderId(new LeaderId(query.leaderId()));
+  }
+
+  @Override
+  public Optional<UserWithLeaderResource> handle(GetUserLeaderByIdQuery query) {
+    var user = userRepository.findById(query.userId());
+    var leader = groupsServiceClient.fetchLeaderByLeaderId(query.leaderId());
+
+    Optional<UserWithLeaderResource> userLeader = Optional.empty();
+    if (user.isPresent() && leader.isPresent()) {
+      var resource = new UserWithLeaderResource(user.get(), leader.get());
+      userLeader = Optional.of(resource);
+    }
+
+    return userLeader;
   }
 }
