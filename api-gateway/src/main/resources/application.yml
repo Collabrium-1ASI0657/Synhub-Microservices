@@ -18,6 +18,14 @@ spring:
           filters:
             - StripPrefix=1
 
+        # GROUPS service - privado
+        - id: groups-service
+          uri: lb://groups-service
+          predicates:
+            - Path=/groups/**
+          filters:
+            - StripPrefix=1
+
 server:
   port: 8080
 
