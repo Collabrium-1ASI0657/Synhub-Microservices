@@ -45,7 +45,7 @@ public class GroupCommandServiceImpl implements GroupCommandService {
 
   @Override
   public Optional<Group> handle(UpdateGroupCommand command) {
-    var leaderId = new LeaderId(command.leaderId());
+    var leaderId = command.leaderId();
     var group = groupRepository.findByLeaderId(leaderId).get();
 
     var groupId = group.getId();
@@ -66,7 +66,7 @@ public class GroupCommandServiceImpl implements GroupCommandService {
 
   @Override
   public void handle(DeleteGroupCommand command) {
-    var leaderId = new LeaderId(command.leaderId());
+    var leaderId = command.leaderId();
     var groupId = groupRepository.findByLeaderId(leaderId).get().getId();
 
     var group = groupRepository.findById(groupId);
@@ -83,7 +83,7 @@ public class GroupCommandServiceImpl implements GroupCommandService {
 
   @Override
   public void handle(RemoveMemberFromGroupCommand command) {
-    var leaderId = new LeaderId(command.leaderId());
+    var leaderId = command.leaderId();
     var groupId = groupRepository.findByLeaderId(leaderId)
         .orElseThrow(() -> new IllegalArgumentException("Group not found for leader"))
         .getId();
