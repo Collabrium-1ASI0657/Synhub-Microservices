@@ -8,10 +8,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import pe.edu.upc.iam_service.iam.domain.model.commands.CreateUserLeaderCommand;
-import pe.edu.upc.iam_service.iam.domain.model.queries.GetUserByIdQuery;
 import pe.edu.upc.iam_service.iam.domain.services.UserCommandService;
-import pe.edu.upc.iam_service.iam.domain.services.UserQueryService;
 import pe.edu.upc.iam_service.iam.interfaces.rest.resources.AuthenticatedUserResource;
 import pe.edu.upc.iam_service.iam.interfaces.rest.resources.SignInResource;
 import pe.edu.upc.iam_service.iam.interfaces.rest.resources.SignUpResource;
@@ -33,13 +30,10 @@ import pe.edu.upc.iam_service.iam.interfaces.rest.transform.*;
 @RequestMapping(value = "/api/v1/authentication", produces = MediaType.APPLICATION_JSON_VALUE)
 @Tag(name = "Authentication", description = "Authentication Endpoints")
 public class AuthenticationController {
-  private final UserQueryService userQueryService;
   private final UserCommandService userCommandService;
 
-  public AuthenticationController(UserCommandService userCommandService,
-                                  UserQueryService userQueryService) {
+  public AuthenticationController(UserCommandService userCommandService) {
     this.userCommandService = userCommandService;
-    this.userQueryService = userQueryService;
   }
 
   /**
