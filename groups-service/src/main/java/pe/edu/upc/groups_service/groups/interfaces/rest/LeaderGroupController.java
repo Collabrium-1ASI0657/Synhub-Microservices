@@ -14,6 +14,7 @@ import pe.edu.upc.groups_service.groups.domain.services.GroupQueryService;
 import pe.edu.upc.groups_service.groups.domain.services.LeaderQueryService;
 import pe.edu.upc.groups_service.groups.interfaces.rest.resources.CreateGroupResource;
 import pe.edu.upc.groups_service.groups.interfaces.rest.resources.GroupResource;
+import pe.edu.upc.groups_service.groups.interfaces.rest.resources.InvitationResource;
 import pe.edu.upc.groups_service.groups.interfaces.rest.resources.UpdateGroupResource;
 import pe.edu.upc.groups_service.groups.interfaces.rest.transform.GroupResourceFromEntityAssembler;
 
@@ -109,5 +110,14 @@ public class LeaderGroupController {
     var groupResource = GroupResourceFromEntityAssembler.toResourceFromEntity(group.get());
 
     return ResponseEntity.ok(groupResource);
+  }
+
+  @GetMapping("/member")
+  @Operation(summary = "Get invitation of a member", description = "Get invitation for a specific member")
+  public ResponseEntity<InvitationResource> getInvitationByMember(@RequestHeader("X-Username") String username,
+                                                                  @RequestHeader("Authorization") String authorizationHeader) {
+
+
+    return null;
   }
 }
