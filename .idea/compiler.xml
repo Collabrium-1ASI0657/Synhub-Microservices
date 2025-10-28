@@ -13,7 +13,7 @@
         <module name="discovery-server" />
         <module name="tasks-service" />
       </profile>
-      <profile name="Annotation profile for groups-service" enabled="true">
+      <profile name="Annotation profile for iam-service" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
