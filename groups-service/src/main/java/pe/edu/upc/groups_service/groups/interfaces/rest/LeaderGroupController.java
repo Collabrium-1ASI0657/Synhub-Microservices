@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.*;
 import pe.edu.upc.groups_service.groups.domain.model.commands.CreateGroupCommand;
 import pe.edu.upc.groups_service.groups.domain.model.commands.DeleteGroupCommand;
 import pe.edu.upc.groups_service.groups.domain.model.commands.UpdateGroupCommand;
+import pe.edu.upc.groups_service.groups.domain.model.queries.GetGroupByLeaderIdQuery;
 import pe.edu.upc.groups_service.groups.domain.model.queries.GetLeaderByUsernameQuery;
 import pe.edu.upc.groups_service.groups.domain.services.GroupCommandService;
 import pe.edu.upc.groups_service.groups.domain.services.GroupQueryService;
@@ -93,5 +94,20 @@ public class LeaderGroupController {
     return ResponseEntity.noContent().build();
   }
 
+  @GetMapping
+  @Operation(summary = "Get a group by ID", description = "Gets a group by ID")
+  public ResponseEntity<GroupResource> getGroupById(@RequestHeader("X-Username") String username,
+                                                    @RequestHeader("Authorization") String authorizationHeader) {
+    var getLeaderByUsernameQuery = new GetLeaderByUsernameQuery(username);
+    var leaderWithUserInfo = this.leaderQueryService.handle(getLeaderByUsernameQuery, authorizationHeader);
+    if (leaderWithUserInfo.isEmpty()) return ResponseEntity.notFound().build();
 
+    var getGroupByLeaderIdQuery = new GetGroupByLeaderIdQuery(leaderWithUserInfo.get().leader().getId());
+    var group = this.groupQueryService.handle(getGroupByLeaderIdQuery);
+    if (group.isEmpty()) return ResponseEntity.notFound().build();
+
+    var groupResource = GroupResourceFromEntityAssembler.toResourceFromEntity(group.get());
+
+    return ResponseEntity.ok(groupResource);
+  }
 }
