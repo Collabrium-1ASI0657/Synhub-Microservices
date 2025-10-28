@@ -23,7 +23,7 @@ public class GroupQueryServiceImpl implements GroupQueryService {
 
   @Override
   public Optional<Group> handle(GetGroupByLeaderIdQuery query) {
-    return this.groupRepository.findByLeaderId(new LeaderId(query.leaderId()));
+    return this.groupRepository.findByLeaderId(query.leaderId());
   }
 
   @Override
