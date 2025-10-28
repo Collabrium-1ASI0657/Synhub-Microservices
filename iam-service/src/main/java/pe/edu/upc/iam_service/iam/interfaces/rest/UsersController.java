@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.*;
 import pe.edu.upc.iam_service.iam.domain.model.queries.GetAllUsersQuery;
 import pe.edu.upc.iam_service.iam.domain.model.queries.GetUserByIdQuery;
 import pe.edu.upc.iam_service.iam.domain.model.queries.GetUserByUsernameQuery;
+import pe.edu.upc.iam_service.iam.domain.model.queries.GetUserLeaderByIdQuery;
 import pe.edu.upc.iam_service.iam.domain.services.UserQueryService;
 import pe.edu.upc.iam_service.iam.interfaces.rest.resources.UserResource;
 import pe.edu.upc.iam_service.iam.interfaces.rest.transform.UserResourceFromEntityAssembler;
@@ -41,8 +42,17 @@ public class UsersController {
     var getAllUsersQuery = new GetAllUsersQuery();
     var users = userQueryService.handle(getAllUsersQuery);
     var userResources = users.stream()
-        .map(UserResourceFromEntityAssembler::toResourceFromEntity)
+        .map(user -> {
+          if (user.getLeaderId() != null && user.getLeaderId().value() != null) {
+            var leaderQuery = new GetUserLeaderByIdQuery(user.getId(), user.getLeaderId().value());
+            var userWithLeader = userQueryService.handle(leaderQuery);
+            return UserResourceFromEntityAssembler.toResourceFromLeaderDTO(userWithLeader.get());
+          } else {
+            return UserResourceFromEntityAssembler.toResourceFromEntity(user);
+          }
+        })
         .toList();
+
     return ResponseEntity.ok(userResources);
   }
 
@@ -60,7 +70,18 @@ public class UsersController {
     if (user.isEmpty()) {
       return ResponseEntity.notFound().build();
     }
-    var userResource = UserResourceFromEntityAssembler.toResourceFromEntity(user.get());
+    UserResource userResource = null;
+    var role = user.get().getRoles().stream().findFirst().get().getName().toString();
+    if (role.equals("ROLE_LEADER")) {
+      var userWithLeader = userQueryService.handle(new GetUserLeaderByIdQuery(user.get().getId(), user.get().getLeaderId().value()));
+      userResource = UserResourceFromEntityAssembler.toResourceFromLeaderDTO(userWithLeader.get());
+
+    }
+
+    if (role.equals("ROLE_MEMBER")) {
+      userResource = UserResourceFromEntityAssembler.toResourceFromEntity(user.get());
+    }
+
     return ResponseEntity.ok(userResource);
   }
 
@@ -79,7 +100,19 @@ public class UsersController {
     if (user.isEmpty()) {
       return ResponseEntity.notFound().build();
     }
-    var userResource = UserResourceFromEntityAssembler.toResourceFromEntity(user.get());
+
+    UserResource userResource = null;
+    var role = user.get().getRoles().stream().findFirst().get().getName().toString();
+    if (role.equals("ROLE_LEADER")) {
+      var userWithLeader = userQueryService.handle(new GetUserLeaderByIdQuery(userId, user.get().getLeaderId().value()));
+      userResource = UserResourceFromEntityAssembler.toResourceFromLeaderDTO(userWithLeader.get());
+
+    }
+
+    if (role.equals("ROLE_MEMBER")) {
+      userResource = UserResourceFromEntityAssembler.toResourceFromEntity(user.get());
+    }
+
     return ResponseEntity.ok(userResource);
   }
 }

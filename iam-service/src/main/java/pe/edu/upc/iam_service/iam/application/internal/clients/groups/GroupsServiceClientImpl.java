@@ -25,7 +25,7 @@ public class GroupsServiceClientImpl implements GroupsServiceClient {
       var request = webClient.get()
           .uri(uriBuilder -> uriBuilder
               .path("/leader/{leaderId}")
-              .build());
+              .build(leaderId));
 
       LeaderResource leaderResource = request
           .retrieve()
