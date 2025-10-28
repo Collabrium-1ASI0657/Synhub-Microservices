@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pe.edu.upc.groups_service.groups.domain.model.commands.CreateGroupCommand;
+import pe.edu.upc.groups_service.groups.domain.model.commands.DeleteGroupCommand;
 import pe.edu.upc.groups_service.groups.domain.model.commands.UpdateGroupCommand;
 import pe.edu.upc.groups_service.groups.domain.model.queries.GetLeaderByUsernameQuery;
 import pe.edu.upc.groups_service.groups.domain.services.GroupCommandService;
@@ -78,6 +79,19 @@ public class LeaderGroupController {
     return ResponseEntity.ok(groupResourceUpdated);
   }
 
+  @DeleteMapping
+  @Operation(summary = "Delete a group", description = "Deletes a group")
+  public ResponseEntity<Void> deleteGroup(@RequestHeader("X-Username") String username,
+                                          @RequestHeader("Authorization") String authorizationHeader) {
+    var getLeaderByUsernameQuery = new GetLeaderByUsernameQuery(username);
+    var leaderWithUserInfo = this.leaderQueryService.handle(getLeaderByUsernameQuery, authorizationHeader);
+    if (leaderWithUserInfo.isEmpty()) return ResponseEntity.notFound().build();
+
+    var deleteGroupCommand = new DeleteGroupCommand(leaderWithUserInfo.get().leader().getId());
+    this.groupCommandService.handle(deleteGroupCommand);
+
+    return ResponseEntity.noContent().build();
+  }
 
 
 }
