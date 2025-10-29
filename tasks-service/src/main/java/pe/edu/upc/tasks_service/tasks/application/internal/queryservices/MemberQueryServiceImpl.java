@@ -28,6 +28,8 @@ public class MemberQueryServiceImpl implements MemberQueryService {
 
   @Override
   public Optional<Member> handle(GetMemberByUsernameQuery query) {
+
+
     return Optional.empty();
   }
 
