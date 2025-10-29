@@ -4,7 +4,5 @@ import pe.edu.upc.tasks_service.tasks.domain.model.commands.CreateMemberCommand;
 import pe.edu.upc.tasks_service.tasks.interfaces.rest.resources.CreateMemberResource;
 
 public class CreateMemberCommandFromResourceAssembler {
-  public static CreateMemberCommand toCommandFromResource(CreateMemberResource resource) {
-    return new CreateMemberCommand();
-  }
+
 }
