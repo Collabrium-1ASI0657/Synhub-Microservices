@@ -4,11 +4,13 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Service;
 import pe.edu.upc.iam_service.iam.application.internal.outboundservices.events.LeaderPublisher;
+import pe.edu.upc.iam_service.iam.application.internal.outboundservices.events.MemberPublisher;
 import pe.edu.upc.iam_service.iam.application.internal.outboundservices.hashing.HashingService;
 import pe.edu.upc.iam_service.iam.application.internal.outboundservices.tokens.TokenService;
 import pe.edu.upc.iam_service.iam.domain.model.aggregates.User;
 import pe.edu.upc.iam_service.iam.domain.model.commands.*;
 import pe.edu.upc.iam_service.iam.domain.model.valueobjects.LeaderId;
+import pe.edu.upc.iam_service.iam.domain.model.valueobjects.MemberId;
 import pe.edu.upc.iam_service.iam.domain.services.UserCommandService;
 import pe.edu.upc.iam_service.iam.infrastructure.authorization.sfs.model.UserDetailsImpl;
 import pe.edu.upc.iam_service.iam.infrastructure.persistence.jpa.repositories.RoleRepository;
@@ -30,17 +32,20 @@ public class UserCommandServiceImpl implements UserCommandService {
   private final HashingService hashingService;
   private final TokenService tokenService;
   private final LeaderPublisher leaderPublisher;
+  private final MemberPublisher memberPublisher;
 
   public UserCommandServiceImpl(RoleRepository roleRepository,
                                 UserRepository userRepository,
                                 HashingService hashingService,
                                 TokenService tokenService,
-                                LeaderPublisher leaderPublisher) {
+                                LeaderPublisher leaderPublisher,
+                                MemberPublisher memberPublisher) {
     this.roleRepository = roleRepository;
     this.userRepository = userRepository;
     this.hashingService = hashingService;
     this.tokenService = tokenService;
     this.leaderPublisher = leaderPublisher;
+    this.memberPublisher = memberPublisher;
   }
 
   /**
@@ -125,7 +130,18 @@ public class UserCommandServiceImpl implements UserCommandService {
 
   @Override
   public Optional<User> handle(CreateUserMemberCommand command) {
-    return Optional.empty();
+    var userId = command.userId();
+    if(userRepository.findById(userId).isEmpty()){
+      throw new RuntimeException("User not found");
+    }
+    var user = userRepository.findById(userId);
+    try {
+      memberPublisher.publishMemberCreated(userId);
+    } catch (Exception e) {
+      throw new RuntimeException("Error while creating member: " + e.getMessage());
+    }
+
+    return user;
   }
 
   @Override
@@ -147,6 +163,26 @@ public class UserCommandServiceImpl implements UserCommandService {
       return Optional.of(user);
     } catch (IllegalArgumentException e) {
       System.err.println("Invalid Leader ID received: " + e.getMessage());
+      return Optional.empty();
+    }
+  }
+
+  @Override
+  public Optional<User> handle(UpdateUserMemberIdCommand command) {
+    var userOptional = userRepository.findById(command.userId());
+    if (userOptional.isEmpty()) {
+      return Optional.empty();
+    }
+    var user = userOptional.get();
+
+    try {
+      MemberId newMemberId = new MemberId(command.memberId());
+      user.setMemberId(newMemberId);
+      userRepository.save(user);
+
+      return Optional.of(user);
+
+    } catch (IllegalArgumentException e) {
       return Optional.empty();
     }
   }

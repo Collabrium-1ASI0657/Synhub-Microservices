@@ -35,4 +35,6 @@ public interface UserCommandService {
   Optional<User> handle(CreateUserMemberCommand command);
 
   Optional<User> handle(UpdateUserLeaderIdCommand command);
+
+  Optional<User> handle(UpdateUserMemberIdCommand command);
 }

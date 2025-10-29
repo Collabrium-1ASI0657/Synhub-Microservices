@@ -14,14 +14,20 @@ public class UserResourceFromEntityAssembler {
         .map(Role::getStringName)
         .toList();
 
-    UserLeaderResource leaderResource = user.getLeaderId() != null ?
+    // Define constantes para evitar "magic strings"
+    final String LEADER_ROLE = "ROLE_LEADER";
+    final String MEMBER_ROLE = "ROLE_MEMBER";
+
+    // Rellenar UserLeaderResource solo si el usuario tiene el rol "leader"
+    UserLeaderResource leaderResource = roles.contains(LEADER_ROLE) ?
         new UserLeaderResource(
-            user.getLeaderId().value(),
-            "string",
+            10L,
+            "19:00:00", // Asumiendo que este valor es fijo o se obtiene de otro lado
             0) : null;
 
-    UserMemberResource memberResource = user.getMemberId() != null ?
-        new UserMemberResource(user.getMemberId().value(),
+    // Rellenar UserMemberResource solo si el usuario tiene el rol "member"
+    UserMemberResource memberResource = roles.contains(MEMBER_ROLE) ?
+        new UserMemberResource(11L,
             0L) : null;
 
     return new UserResource(

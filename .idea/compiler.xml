@@ -11,9 +11,8 @@
         <module name="metrics-service" />
         <module name="requests-service" />
         <module name="discovery-server" />
-        <module name="tasks-service" />
       </profile>
-      <profile name="Annotation profile for iam-service" enabled="true">
+      <profile name="Annotation profile for tasks-service" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
@@ -21,6 +20,7 @@
           <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.42/lombok-1.18.42.jar" />
         </processorPath>
         <module name="iam-service" />
+        <module name="tasks-service" />
         <module name="groups-service" />
       </profile>
     </annotationProcessing>

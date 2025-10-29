@@ -11,22 +11,19 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class RabbitMQConfig {
-  // -------------------------------------------------------
-  // EXCHANGE GENERAL
-  // -------------------------------------------------------
   public static final String EXCHANGE_NAME = "iam-events-exchange";
 
-  // -------------------------------------------------------
-  // EVENTOS PRODUCIDOS (IAM envía)
-  // -------------------------------------------------------
+  // Eventos que IAM publica
   public static final String ROUTING_KEY_LEADER_CREATED = "leader.created";
   public static final String ROUTING_KEY_MEMBER_CREATED = "member.created";
 
-  // -------------------------------------------------------
-  // EVENTOS ESCUCHADOS
-  // -------------------------------------------------------
+  // Eventos que IAM escucha (respuestas)
   public static final String ROUTING_KEY_LEADER_CREATED_SUCCESS = "leader.created.success";
-  public static final String QUEUE_LEADER_UPDATER = "iam.leader-updater"; // Nueva cola
+  public static final String ROUTING_KEY_MEMBER_CREATED_SUCCESS = "member.created.success";
+
+  // Colas para escuchar respuestas
+  public static final String QUEUE_LEADER_UPDATER = "iam.leader-updater";
+  public static final String QUEUE_MEMBER_UPDATER = "iam.member-updater";
 
   // -------------------------------------------------------
   // BEANS DE INFRAESTRUCTURA
@@ -47,9 +44,21 @@ public class RabbitMQConfig {
   }
 
   @Bean
+  public Queue memberUpdaterQueue() {
+    return new Queue(QUEUE_MEMBER_UPDATER, true);
+  }
+
+  @Bean
   public Binding leaderUpdaterBinding(Queue leaderUpdaterQueue, TopicExchange exchange) {
     return BindingBuilder.bind(leaderUpdaterQueue)
         .to(exchange)
         .with(ROUTING_KEY_LEADER_CREATED_SUCCESS);
+  }
+
+  @Bean
+  public Binding memberUpdaterBinding(Queue memberUpdaterQueue, TopicExchange exchange) {
+    return BindingBuilder.bind(memberUpdaterQueue)
+        .to(exchange)
+        .with(ROUTING_KEY_MEMBER_CREATED_SUCCESS);
   }
 }
