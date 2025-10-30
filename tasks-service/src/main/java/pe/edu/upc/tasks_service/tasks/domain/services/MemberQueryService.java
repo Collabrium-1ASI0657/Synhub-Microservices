@@ -1,10 +1,8 @@
 package pe.edu.upc.tasks_service.tasks.domain.services;
 
+import pe.edu.upc.tasks_service.tasks.application.clients.iam.resources.UserResource;
 import pe.edu.upc.tasks_service.tasks.domain.model.aggregates.Member;
-import pe.edu.upc.tasks_service.tasks.domain.model.queries.GetAllMembersQuery;
-import pe.edu.upc.tasks_service.tasks.domain.model.queries.GetMemberByIdQuery;
-import pe.edu.upc.tasks_service.tasks.domain.model.queries.GetMemberByUsernameQuery;
-import pe.edu.upc.tasks_service.tasks.domain.model.queries.GetMembersByGroupIdQuery;
+import pe.edu.upc.tasks_service.tasks.domain.model.queries.*;
 
 import java.util.List;
 import java.util.Optional;
@@ -25,7 +23,7 @@ public interface MemberQueryService {
    * @param query the query containing the user ID
    * @return an Optional containing the User if found, or empty if not found
    */
-  Optional<Member> handle(GetMemberByUsernameQuery query);
+  Optional<UserResource> handle(GetMemberByUsernameQuery query);
 
   /**
    * Retrieves all members.
@@ -41,4 +39,6 @@ public interface MemberQueryService {
    * @return a list of members belonging to the specified group
    */
   List<Member> handle(GetMembersByGroupIdQuery query);
+
+  Optional<UserResource> handle(GetMemberInfoByIdQuery query);
 }

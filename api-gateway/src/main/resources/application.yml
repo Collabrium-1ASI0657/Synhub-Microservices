@@ -26,6 +26,14 @@ spring:
           filters:
             - StripPrefix=1
 
+        # TASKS service - privado
+        - id: tasks-service
+          uri: lb://tasks-service
+          predicates:
+            - Path=/tasks/**
+          filters:
+            - StripPrefix=1
+
 server:
   port: 8080
 

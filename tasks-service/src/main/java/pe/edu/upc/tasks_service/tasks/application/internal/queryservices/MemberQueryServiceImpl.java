@@ -1,11 +1,10 @@
 package pe.edu.upc.tasks_service.tasks.application.internal.queryservices;
 
 import org.springframework.stereotype.Service;
+import pe.edu.upc.tasks_service.tasks.application.clients.iam.IamServiceClient;
+import pe.edu.upc.tasks_service.tasks.application.clients.iam.resources.UserResource;
 import pe.edu.upc.tasks_service.tasks.domain.model.aggregates.Member;
-import pe.edu.upc.tasks_service.tasks.domain.model.queries.GetAllMembersQuery;
-import pe.edu.upc.tasks_service.tasks.domain.model.queries.GetMemberByIdQuery;
-import pe.edu.upc.tasks_service.tasks.domain.model.queries.GetMemberByUsernameQuery;
-import pe.edu.upc.tasks_service.tasks.domain.model.queries.GetMembersByGroupIdQuery;
+import pe.edu.upc.tasks_service.tasks.domain.model.queries.*;
 import pe.edu.upc.tasks_service.tasks.domain.model.valueobjects.GroupId;
 import pe.edu.upc.tasks_service.tasks.domain.services.MemberQueryService;
 import pe.edu.upc.tasks_service.tasks.infrastructure.persistence.jpa.repositories.MemberRepository;
@@ -16,9 +15,12 @@ import java.util.Optional;
 @Service
 public class MemberQueryServiceImpl implements MemberQueryService {
   private final MemberRepository memberRepository;
+  private final IamServiceClient  iamServiceClient;
 
-  public MemberQueryServiceImpl(MemberRepository memberRepository) {
+  public MemberQueryServiceImpl(MemberRepository memberRepository,
+                                IamServiceClient iamServiceClient) {
     this.memberRepository = memberRepository;
+    this.iamServiceClient = iamServiceClient;
   }
 
   @Override
@@ -27,10 +29,24 @@ public class MemberQueryServiceImpl implements MemberQueryService {
   }
 
   @Override
-  public Optional<Member> handle(GetMemberByUsernameQuery query) {
+  public Optional<UserResource> handle(GetMemberByUsernameQuery query) {
+    var userOptional = iamServiceClient.fetchUserByUsername(query.username(), query.authorizationHeader());
+    if (userOptional.isEmpty()) {
+      return Optional.empty();
+    }
+    var user = userOptional.get();
 
+    var primaryRoleOptional = user.roles().stream().findFirst();
+    if (primaryRoleOptional.isEmpty()) {
+      return Optional.empty();
+    }
 
-    return Optional.empty();
+    var role = primaryRoleOptional.get();
+    if (!role.equals("ROLE_MEMBER")) {
+      return Optional.empty();
+    }
+
+    return userOptional;
   }
 
   @Override
@@ -41,5 +57,26 @@ public class MemberQueryServiceImpl implements MemberQueryService {
   @Override
   public List<Member> handle(GetMembersByGroupIdQuery query) {
     return memberRepository.findMembersByGroupId(new GroupId(query.groupId()));
+  }
+
+  @Override
+  public Optional<UserResource> handle(GetMemberInfoByIdQuery query) {
+    var memberOptional = iamServiceClient.fetchUserByMemberId(query.memberId(), query.authorizationHeader());
+    if (memberOptional.isEmpty()) {
+      return Optional.empty();
+    }
+    var user = memberOptional.get();
+
+    var primaryRoleOptional = user.roles().stream().findFirst();
+    if (primaryRoleOptional.isEmpty()) {
+      return Optional.empty();
+    }
+
+    var role = primaryRoleOptional.get();
+    if (!role.equals("ROLE_MEMBER")) {
+      return Optional.empty();
+    }
+
+    return memberOptional;
   }
 }

@@ -5,5 +5,6 @@ public record MemberResource(Long id,
                              String name,
                              String surname,
                              String imgUrl,
-                             String email) {
+                             String email,
+                             Long groupId) {
 }
