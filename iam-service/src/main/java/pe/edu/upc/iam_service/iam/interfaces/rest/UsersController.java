@@ -90,16 +90,18 @@ public class UsersController {
   }
 
   @GetMapping(params = "memberId")
-  public ResponseEntity<UserResource> getUserByMemberId(@RequestParam Long memberId) {
+  public ResponseEntity<UserResource> getUserByMemberId(@RequestParam Long memberId,
+                                                        @RequestHeader("Authorization") String authorizationHeader) {
     var getUserByMemberIdQuery = new GetUserByMemberIdQuery(memberId);
     var user = userQueryService.handle(getUserByMemberIdQuery);
     if (user.isEmpty()) {
       return ResponseEntity.notFound().build();
     }
 
-    var getUserMemberByIdQuery = new GetUserMemberByIdQuery(user.get().getId(), memberId, null);
+    var getUserMemberByIdQuery = new GetUserMemberByIdQuery(user.get().getId(), memberId, authorizationHeader);
+    var userWithMember = userQueryService.handle(getUserMemberByIdQuery);
 
-    var userResource = UserResourceFromEntityAssembler.toResourceFromEntity(user.get());
+    var userResource = UserResourceFromEntityAssembler.toResourceFromMemberDTO(userWithMember.get());
 
     return ResponseEntity.ok(userResource);
   }

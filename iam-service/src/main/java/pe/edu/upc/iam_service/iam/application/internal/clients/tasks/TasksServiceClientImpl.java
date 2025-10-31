@@ -25,12 +25,12 @@ public class TasksServiceClientImpl implements TasksServiceClient {
     try {
       var request = webClient.get()
           .uri(uriBuilder -> uriBuilder
-              .path("/member/details/{memberId}")
+              .path("/member/{memberId}")
               .build(memberId));
 
-      if (authorizationHeader != null && !authorizationHeader.isEmpty()) {
-        request = request.header("Authorization", authorizationHeader);
-      }
+//      if (authorizationHeader != null && !authorizationHeader.isEmpty()) {
+//        request = request.header("Authorization", authorizationHeader);
+//      }
 
       MemberResource memberResource = request
           .retrieve()
