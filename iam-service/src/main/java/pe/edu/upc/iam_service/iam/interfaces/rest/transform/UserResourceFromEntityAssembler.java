@@ -1,6 +1,7 @@
 package pe.edu.upc.iam_service.iam.interfaces.rest.transform;
 
 import pe.edu.upc.iam_service.iam.application.internal.clients.groups.resources.UserWithLeaderResource;
+import pe.edu.upc.iam_service.iam.application.internal.clients.tasks.dto.UserWithMemberInfo;
 import pe.edu.upc.iam_service.iam.domain.model.aggregates.User;
 import pe.edu.upc.iam_service.iam.domain.model.entities.Role;
 import pe.edu.upc.iam_service.iam.interfaces.rest.resources.UserLeaderResource;
@@ -65,6 +66,31 @@ public class UserResourceFromEntityAssembler {
         user.getEmail(),
         leaderResource,
         null,
+        roles
+    );
+  }
+
+  public static UserResource toResourceFromMemberDTO(UserWithMemberInfo dto){
+    var user = dto.user();
+    var roles = user.getRoles().stream()
+        .map(Role::getStringName)
+        .toList();
+    var member = dto.member();
+
+    UserMemberResource userMemberResource = new UserMemberResource(
+        member.id(),
+        member.groupId()
+    );
+
+    return new UserResource(
+        user.getId(),
+        user.getUsername(),
+        user.getName(),
+        user.getSurname(),
+        user.getImgUrl(),
+        user.getEmail(),
+        null,
+        userMemberResource,
         roles
     );
   }
