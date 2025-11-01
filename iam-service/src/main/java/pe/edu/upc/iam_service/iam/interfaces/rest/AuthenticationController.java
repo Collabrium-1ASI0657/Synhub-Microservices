@@ -80,11 +80,14 @@ public class AuthenticationController {
       if (user.isEmpty()) {
         return ResponseEntity.badRequest().build();
       }
-      System.out.println("Soy un LEADER");
     }
 
     if(role.equals("ROLE_MEMBER")){
-      System.out.println("Soy un MEMBER");
+      var createUserMemberCommand = CreateUserMemberCommandFromResourceAssembler.toCommandFromResource(user.get().getId());
+      user = userCommandService.handle(createUserMemberCommand);
+      if (user.isEmpty()) {
+        return ResponseEntity.badRequest().build();
+      }
     }
 
     var userResource = UserResourceFromEntityAssembler.toResourceFromEntity(user.get());

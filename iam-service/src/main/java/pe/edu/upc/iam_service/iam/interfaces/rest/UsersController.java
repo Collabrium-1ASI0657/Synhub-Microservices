@@ -4,10 +4,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import pe.edu.upc.iam_service.iam.domain.model.queries.GetAllUsersQuery;
-import pe.edu.upc.iam_service.iam.domain.model.queries.GetUserByIdQuery;
-import pe.edu.upc.iam_service.iam.domain.model.queries.GetUserByUsernameQuery;
-import pe.edu.upc.iam_service.iam.domain.model.queries.GetUserLeaderByIdQuery;
+import pe.edu.upc.iam_service.iam.domain.model.queries.*;
 import pe.edu.upc.iam_service.iam.domain.services.UserQueryService;
 import pe.edu.upc.iam_service.iam.interfaces.rest.resources.UserResource;
 import pe.edu.upc.iam_service.iam.interfaces.rest.transform.UserResourceFromEntityAssembler;
@@ -38,7 +35,7 @@ public class UsersController {
    * @see UserResource
    */
   @GetMapping
-  public ResponseEntity<List<UserResource>> getAllUsers() {
+  public ResponseEntity<List<UserResource>> getAllUsers(@RequestHeader("Authorization") String authorizationHeader) {
     var getAllUsersQuery = new GetAllUsersQuery();
     var users = userQueryService.handle(getAllUsersQuery);
     var userResources = users.stream()
@@ -47,8 +44,12 @@ public class UsersController {
             var leaderQuery = new GetUserLeaderByIdQuery(user.getId(), user.getLeaderId().value());
             var userWithLeader = userQueryService.handle(leaderQuery);
             return UserResourceFromEntityAssembler.toResourceFromLeaderDTO(userWithLeader.get());
+
           } else {
-            return UserResourceFromEntityAssembler.toResourceFromEntity(user);
+            assert user.getMemberId() != null;
+            var memberQuery = new GetUserMemberByIdQuery(user.getId(), user.getMemberId().value(), authorizationHeader);
+            var userWithMember = userQueryService.handle(memberQuery);
+            return UserResourceFromEntityAssembler.toResourceFromMemberDTO(userWithMember.get());
           }
         })
         .toList();
@@ -64,7 +65,8 @@ public class UsersController {
    * @see UserResource
    */
   @GetMapping(params = "username")
-  public ResponseEntity<UserResource> getUserByUsername(@RequestParam String username) {
+  public ResponseEntity<UserResource> getUserByUsername(@RequestParam String username,
+                                                        @RequestHeader("Authorization") String authorizationHeader) {
     var getUserByUsernameQuery = new GetUserByUsernameQuery(username);
     var user = userQueryService.handle(getUserByUsernameQuery);
     if (user.isEmpty()) {
@@ -79,8 +81,27 @@ public class UsersController {
     }
 
     if (role.equals("ROLE_MEMBER")) {
-      userResource = UserResourceFromEntityAssembler.toResourceFromEntity(user.get());
+      var userWithMember = userQueryService.handle(new GetUserMemberByIdQuery(user.get().getId(),
+          user.get().getMemberId().value(), authorizationHeader));
+      userResource = UserResourceFromEntityAssembler.toResourceFromMemberDTO(userWithMember.get());
     }
+
+    return ResponseEntity.ok(userResource);
+  }
+
+  @GetMapping(params = "memberId")
+  public ResponseEntity<UserResource> getUserByMemberId(@RequestParam Long memberId,
+                                                        @RequestHeader("Authorization") String authorizationHeader) {
+    var getUserByMemberIdQuery = new GetUserByMemberIdQuery(memberId);
+    var user = userQueryService.handle(getUserByMemberIdQuery);
+    if (user.isEmpty()) {
+      return ResponseEntity.notFound().build();
+    }
+
+    var getUserMemberByIdQuery = new GetUserMemberByIdQuery(user.get().getId(), memberId, authorizationHeader);
+    var userWithMember = userQueryService.handle(getUserMemberByIdQuery);
+
+    var userResource = UserResourceFromEntityAssembler.toResourceFromMemberDTO(userWithMember.get());
 
     return ResponseEntity.ok(userResource);
   }
@@ -94,7 +115,8 @@ public class UsersController {
    * @see UserResource
    */
   @GetMapping(value = "/{userId}")
-  public ResponseEntity<UserResource> getUserById(@PathVariable Long userId) {
+  public ResponseEntity<UserResource> getUserById(@PathVariable Long userId,
+                                                  @RequestHeader("Authorization") String authorizationHeader) {
     var getUserByIdQuery = new GetUserByIdQuery(userId);
     var user = userQueryService.handle(getUserByIdQuery);
     if (user.isEmpty()) {
@@ -110,7 +132,9 @@ public class UsersController {
     }
 
     if (role.equals("ROLE_MEMBER")) {
-      userResource = UserResourceFromEntityAssembler.toResourceFromEntity(user.get());
+      var userWithMember = userQueryService.handle(new GetUserMemberByIdQuery(user.get().getId(),
+          user.get().getMemberId().value(), authorizationHeader));
+      userResource = UserResourceFromEntityAssembler.toResourceFromMemberDTO(userWithMember.get());
     }
 
     return ResponseEntity.ok(userResource);

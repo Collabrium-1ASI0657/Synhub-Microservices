@@ -3,6 +3,8 @@ package pe.edu.upc.iam_service.iam.application.internal.queryservices;
 import org.springframework.stereotype.Service;
 import pe.edu.upc.iam_service.iam.application.internal.clients.groups.GroupsServiceClient;
 import pe.edu.upc.iam_service.iam.application.internal.clients.groups.resources.UserWithLeaderResource;
+import pe.edu.upc.iam_service.iam.application.internal.clients.tasks.TasksServiceClient;
+import pe.edu.upc.iam_service.iam.application.internal.clients.tasks.dto.UserWithMemberInfo;
 import pe.edu.upc.iam_service.iam.domain.model.aggregates.User;
 import pe.edu.upc.iam_service.iam.domain.model.queries.*;
 import pe.edu.upc.iam_service.iam.domain.model.valueobjects.LeaderId;
@@ -20,15 +22,19 @@ import java.util.Optional;
 public class UserQueryServiceImpl implements UserQueryService {
   private final UserRepository userRepository;
   private final GroupsServiceClient groupsServiceClient;
+  private final TasksServiceClient tasksServiceClient;
 
   /**
    * Constructor.
    *
    * @param userRepository {@link UserRepository} instance.
    */
-  public UserQueryServiceImpl(UserRepository userRepository, GroupsServiceClient groupsServiceClient) {
+  public UserQueryServiceImpl(UserRepository userRepository,
+                              GroupsServiceClient groupsServiceClient,
+                              TasksServiceClient tasksServiceClient) {
     this.userRepository = userRepository;
     this.groupsServiceClient = groupsServiceClient;
+    this.tasksServiceClient = tasksServiceClient;
   }
 
   /**
@@ -98,5 +104,19 @@ public class UserQueryServiceImpl implements UserQueryService {
     }
 
     return userLeader;
+  }
+
+  @Override
+  public Optional<UserWithMemberInfo> handle(GetUserMemberByIdQuery query) {
+    var user = userRepository.findById(query.userId());
+    var member = tasksServiceClient.fetchMemberByMemberId(query.memberId(), query.authorizationHeader());
+
+    Optional<UserWithMemberInfo> userMember = Optional.empty();
+    if (user.isPresent() && member.isPresent()) {
+      var resource = new UserWithMemberInfo(user.get(), member.get());
+      userMember = Optional.of(resource);
+    }
+
+    return userMember;
   }
 }
