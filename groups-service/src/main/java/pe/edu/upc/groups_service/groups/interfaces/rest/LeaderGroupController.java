@@ -112,11 +112,11 @@ public class LeaderGroupController {
     return ResponseEntity.ok(groupResource);
   }
 
-  @GetMapping("/member")
-  @Operation(summary = "Get invitation of a member", description = "Get invitation for a specific member")
-  public ResponseEntity<InvitationResource> getInvitationByMember(@RequestHeader("X-Username") String username,
-                                                                  @RequestHeader("Authorization") String authorizationHeader) {
-
+  @DeleteMapping("/members/{memberId}")
+  @Operation(summary = "Remove a member from the group", description = "Removes a member from the group")
+  public ResponseEntity<Void> removeMemberFromGroup(@RequestHeader("X-Username") String username,
+                                                    @RequestHeader("Authorization") String authorizationHeader,
+                                                    @PathVariable Long memberId) {
 
     return null;
   }

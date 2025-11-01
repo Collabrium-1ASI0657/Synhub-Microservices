@@ -7,7 +7,6 @@ import pe.edu.upc.groups_service.groups.domain.model.queries.GetGroupByIdQuery;
 import pe.edu.upc.groups_service.groups.domain.model.queries.GetGroupByLeaderIdQuery;
 import pe.edu.upc.groups_service.groups.domain.model.queries.GetGroupByMemberIdQuery;
 import pe.edu.upc.groups_service.groups.domain.model.valueobjects.GroupCode;
-import pe.edu.upc.groups_service.groups.domain.model.valueobjects.LeaderId;
 import pe.edu.upc.groups_service.groups.domain.services.GroupQueryService;
 import pe.edu.upc.groups_service.groups.infrastructure.persistence.jpa.repositories.GroupRepository;
 
@@ -38,6 +37,7 @@ public class GroupQueryServiceImpl implements GroupQueryService {
 
   @Override
   public Optional<Group> handle(GetGroupByMemberIdQuery query) {
+
     return Optional.empty();
   }
 

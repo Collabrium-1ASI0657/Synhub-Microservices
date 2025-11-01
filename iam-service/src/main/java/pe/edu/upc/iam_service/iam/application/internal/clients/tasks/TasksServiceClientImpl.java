@@ -28,10 +28,6 @@ public class TasksServiceClientImpl implements TasksServiceClient {
               .path("/member/{memberId}")
               .build(memberId));
 
-//      if (authorizationHeader != null && !authorizationHeader.isEmpty()) {
-//        request = request.header("Authorization", authorizationHeader);
-//      }
-
       MemberResource memberResource = request
           .retrieve()
           .bodyToMono(MemberResource.class)

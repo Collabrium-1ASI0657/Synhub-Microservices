@@ -1,5 +1,6 @@
 package pe.edu.upc.groups_service.groups.domain.services;
 
+import pe.edu.upc.groups_service.groups.application.dto.InvitationWithMemberInfo;
 import pe.edu.upc.groups_service.groups.domain.model.aggregates.Invitation;
 import pe.edu.upc.groups_service.groups.domain.model.commands.AcceptInvitationCommand;
 import pe.edu.upc.groups_service.groups.domain.model.commands.CancelInvitationCommand;
@@ -9,7 +10,7 @@ import pe.edu.upc.groups_service.groups.domain.model.commands.RejectInvitationCo
 import java.util.Optional;
 
 public interface InvitationCommandService {
-  Optional<Invitation> handle(CreateInvitationCommand command);
+  Optional<InvitationWithMemberInfo> handle(CreateInvitationCommand command);
   void handle(RejectInvitationCommand command);
   void handle(CancelInvitationCommand command);
   void handle(AcceptInvitationCommand command);

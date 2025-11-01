@@ -1,11 +1,14 @@
 package pe.edu.upc.groups_service.groups.application.internal.commandservices;
 
 import org.springframework.stereotype.Service;
+import pe.edu.upc.groups_service.groups.application.clients.tasks.TasksServiceClient;
+import pe.edu.upc.groups_service.groups.application.dto.InvitationWithMemberInfo;
 import pe.edu.upc.groups_service.groups.domain.model.aggregates.Invitation;
 import pe.edu.upc.groups_service.groups.domain.model.commands.AcceptInvitationCommand;
 import pe.edu.upc.groups_service.groups.domain.model.commands.CancelInvitationCommand;
 import pe.edu.upc.groups_service.groups.domain.model.commands.CreateInvitationCommand;
 import pe.edu.upc.groups_service.groups.domain.model.commands.RejectInvitationCommand;
+import pe.edu.upc.groups_service.groups.domain.model.valueobjects.MemberId;
 import pe.edu.upc.groups_service.groups.domain.services.InvitationCommandService;
 import pe.edu.upc.groups_service.groups.infrastructure.persistence.jpa.repositories.GroupRepository;
 import pe.edu.upc.groups_service.groups.infrastructure.persistence.jpa.repositories.InvitationRepository;
@@ -19,19 +22,43 @@ public class InvitationCommandServiceImpl implements InvitationCommandService {
   private final InvitationRepository invitationRepository;
   private final GroupRepository groupRepository;
   private final LeaderRepository leaderRepository;
+  private final TasksServiceClient tasksServiceClient;
 
   public InvitationCommandServiceImpl(
       InvitationRepository invitationRepository,
       GroupRepository groupRepository,
-      LeaderRepository leaderRepository) {
+      LeaderRepository leaderRepository,
+      TasksServiceClient tasksServiceClient) {
+
     this.invitationRepository = invitationRepository;
     this.groupRepository = groupRepository;
     this.leaderRepository = leaderRepository;
+    this.tasksServiceClient = tasksServiceClient;
   }
 
   @Override
-  public Optional<Invitation> handle(CreateInvitationCommand command) {
-    return Optional.empty();
+  public Optional<InvitationWithMemberInfo> handle(CreateInvitationCommand command) {
+    var member = this.tasksServiceClient.fetchMemberByUsername(command.username(), command.authorizationHeader());
+    if (member.isEmpty()) {
+      throw new IllegalArgumentException("Member with username " + command.username() + " does not exist");
+    }
+
+    var group = this.groupRepository.findById(command.groupId());
+    if (group.isEmpty()) {
+      throw new IllegalArgumentException("Group with id " + command.groupId() + " does not exist");
+    }
+
+    var memberId = new MemberId(member.get().id());
+    if (this.invitationRepository.existsByMemberId(memberId)) {
+      throw new IllegalArgumentException("Member with id " + memberId.value() + " already has an invitation");
+    }
+
+    var createdInvitation = new Invitation(memberId, group.get());
+    this.invitationRepository.save(createdInvitation);
+
+    InvitationWithMemberInfo invitationWithMemberInfo = new InvitationWithMemberInfo(createdInvitation, member.get());
+
+    return Optional.of(invitationWithMemberInfo);
   }
 
   @Override

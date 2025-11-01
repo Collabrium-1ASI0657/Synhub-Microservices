@@ -2,25 +2,15 @@ package pe.edu.upc.groups_service.groups.interfaces.rest;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import pe.edu.upc.groups_service.groups.domain.model.commands.CancelInvitationCommand;
 import pe.edu.upc.groups_service.groups.domain.model.commands.CreateInvitationCommand;
-import pe.edu.upc.groups_service.groups.domain.model.queries.GetGroupByLeaderIdQuery;
-import pe.edu.upc.groups_service.groups.domain.model.queries.GetInvitationByMemberIdQuery;
-import pe.edu.upc.groups_service.groups.domain.model.queries.GetInvitationsByGroupIdQuery;
-import pe.edu.upc.groups_service.groups.domain.model.queries.GetLeaderByUsernameQuery;
 import pe.edu.upc.groups_service.groups.domain.services.GroupQueryService;
 import pe.edu.upc.groups_service.groups.domain.services.InvitationCommandService;
 import pe.edu.upc.groups_service.groups.domain.services.InvitationQueryService;
 import pe.edu.upc.groups_service.groups.domain.services.LeaderQueryService;
 import pe.edu.upc.groups_service.groups.interfaces.rest.resources.InvitationResource;
 import pe.edu.upc.groups_service.groups.interfaces.rest.transform.InvitationResourceFromEntityAssembler;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/invitations")
@@ -30,7 +20,6 @@ public class InvitationController {
   private final InvitationCommandService invitationCommandService;
   private final LeaderQueryService leaderQueryService;
   private final GroupQueryService groupQueryService;
-//  private static final Logger logger = LoggerFactory.getLogger(InvitationController.class);
 
   public InvitationController(InvitationQueryService invitationQueryService,
                               InvitationCommandService invitationCommandService,
@@ -42,27 +31,19 @@ public class InvitationController {
     this.groupQueryService = groupQueryService;
   }
 
-//  @PostMapping("/groups/{groupId}")
-//  @Operation(summary = "Create a new invitation", description = "Create a new invitation for a group")
-//  public ResponseEntity<InvitationResource> createInvitation(@PathVariable Long groupId, @AuthenticationPrincipal UserDetails userDetails) {
-//    String username = userDetails.getUsername();
-//
-//    var getMemberByUsernameQuery = new GetMemberByUsernameQuery(username);
-//
-//    var member = this.memberQueryService.handle(getMemberByUsernameQuery);
-//
-//    if(member.isEmpty()) return ResponseEntity.notFound().build();
-//
-//    Long memberId = member.get().getId();
-//
-//    var createInvitationCommand = new CreateInvitationCommand(memberId, groupId);
-//    var createdInvitation = this.invitationCommandService.handle(createInvitationCommand);
-//    if (createdInvitation.isEmpty()) {
-//      return ResponseEntity.badRequest().build();
-//    }
-//    var invitationResource = InvitationResourceFromEntityAssembler.toResourceFromEntity(createdInvitation.get(),member.get());
-//    return ResponseEntity.ok(invitationResource);
-//  }
+  @PostMapping("/groups/{groupId}")
+  @Operation(summary = "Create a new invitation", description = "Create a new invitation for a group")
+  public ResponseEntity<InvitationResource> createInvitation(@PathVariable Long groupId,
+                                                             @RequestHeader("X-Username") String username,
+                                                             @RequestHeader("Authorization") String authorizationHeader) {
+    var createInvitationCommand = new CreateInvitationCommand(groupId, username, authorizationHeader);
+    var invitation = this.invitationCommandService.handle(createInvitationCommand);
+    if (invitation.isEmpty()) return ResponseEntity.notFound().build();
+
+    var invitationResource = InvitationResourceFromEntityAssembler.toResourceFromEntity(invitation.get());
+
+    return ResponseEntity.ok(invitationResource);
+  }
 
 //  @GetMapping("/group")
 //  @Operation(summary = "Get all invitations for a group", description = "Get all invitations for a specific group")
