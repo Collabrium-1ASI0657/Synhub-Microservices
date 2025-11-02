@@ -1,8 +1,6 @@
 package pe.edu.upc.groups_service.groups.application.internal.commandservices;
 
 import org.springframework.stereotype.Service;
-import pe.edu.upc.groups_service.groups.application.clients.tasks.TasksServiceClient;
-import pe.edu.upc.groups_service.groups.application.dto.InvitationWithMemberInfo;
 import pe.edu.upc.groups_service.groups.domain.model.aggregates.Invitation;
 import pe.edu.upc.groups_service.groups.domain.model.commands.AcceptInvitationCommand;
 import pe.edu.upc.groups_service.groups.domain.model.commands.CancelInvitationCommand;
@@ -22,33 +20,25 @@ public class InvitationCommandServiceImpl implements InvitationCommandService {
   private final InvitationRepository invitationRepository;
   private final GroupRepository groupRepository;
   private final LeaderRepository leaderRepository;
-  private final TasksServiceClient tasksServiceClient;
 
   public InvitationCommandServiceImpl(
       InvitationRepository invitationRepository,
       GroupRepository groupRepository,
-      LeaderRepository leaderRepository,
-      TasksServiceClient tasksServiceClient) {
+      LeaderRepository leaderRepository) {
 
     this.invitationRepository = invitationRepository;
     this.groupRepository = groupRepository;
     this.leaderRepository = leaderRepository;
-    this.tasksServiceClient = tasksServiceClient;
   }
 
   @Override
-  public Optional<InvitationWithMemberInfo> handle(CreateInvitationCommand command) {
-    var member = this.tasksServiceClient.fetchMemberByUsername(command.username(), command.authorizationHeader());
-    if (member.isEmpty()) {
-      throw new IllegalArgumentException("Member with username " + command.username() + " does not exist");
-    }
-
+  public Optional<Invitation> handle(CreateInvitationCommand command) {
     var group = this.groupRepository.findById(command.groupId());
     if (group.isEmpty()) {
       throw new IllegalArgumentException("Group with id " + command.groupId() + " does not exist");
     }
 
-    var memberId = new MemberId(member.get().id());
+    var memberId = new MemberId(command.memberId());
     if (this.invitationRepository.existsByMemberId(memberId)) {
       throw new IllegalArgumentException("Member with id " + memberId.value() + " already has an invitation");
     }
@@ -56,9 +46,7 @@ public class InvitationCommandServiceImpl implements InvitationCommandService {
     var createdInvitation = new Invitation(memberId, group.get());
     this.invitationRepository.save(createdInvitation);
 
-    InvitationWithMemberInfo invitationWithMemberInfo = new InvitationWithMemberInfo(createdInvitation, member.get());
-
-    return Optional.of(invitationWithMemberInfo);
+    return Optional.of(createdInvitation);
   }
 
   @Override

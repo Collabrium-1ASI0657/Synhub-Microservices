@@ -61,4 +61,43 @@ public class IamServiceClientImpl implements IamServiceClient {
       return Optional.empty();
     }
   }
+
+  @Override
+  public Optional<UserResource> fetchUserByMemberId(Long memberId, String authorizationHeader) {
+    try {
+      var request = webClient.get()
+          .uri(uriBuilder -> uriBuilder
+              .path("/users")
+              .queryParam("memberId", memberId)
+              .build());
+
+      if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+        request = request.header("Authorization", authorizationHeader);
+      }
+
+      UserResource resource = request
+          .retrieve()
+          .bodyToMono(UserResource.class)
+          .block();
+
+      if (resource != null) {
+        log.info("Usuario encontrado para memberId: {}. ID: {}", memberId, resource.id());
+      } else {
+        log.warn("El WebClient devolvió un recurso nulo para el memberId: {}", memberId);
+      }
+
+      return Optional.ofNullable(resource);
+
+    } catch (WebClientResponseException e) {
+      if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
+        log.warn("Usuario no encontrado en IAM Service (404) para memberId: {}", memberId); // ✅ Caso de Optional.empty()
+        return Optional.empty();
+      }
+      log.error("Error WebClient al buscar usuario con memberId {}. Status: {}. Body: {}", memberId, e.getStatusCode(), e.getResponseBodyAsString(), e);
+      return Optional.empty();
+    } catch (Exception e) {
+      log.error("Error general al buscar usuario con memberId {} en IAM Service.", memberId, e); // ✅ Fallas de red/timeout
+      return Optional.empty();
+    }
+  }
 }

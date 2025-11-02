@@ -5,7 +5,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
-import pe.edu.upc.groups_service.groups.application.clients.tasks.resources.MemberResource;
 import pe.edu.upc.groups_service.groups.application.clients.tasks.resources.MemberWithUserResource;
 
 import java.util.Optional;
@@ -21,16 +20,16 @@ public class TasksServiceClientImpl implements TasksServiceClient {
   }
 
   @Override
-  public Optional<MemberResource> fetchMemberByMemberId(Long memberId) {
+  public Optional<MemberWithUserResource> fetchMemberByMemberId(Long memberId) {
     try {
       var request = webClient.get()
           .uri(uriBuilder -> uriBuilder
-              .path("/member/{memberId}")
+              .path("/member/details/{memberId}")
               .build(memberId));
 
-      MemberResource memberResource = request
+      MemberWithUserResource memberResource = request
           .retrieve()
-          .bodyToMono(MemberResource.class)
+          .bodyToMono(MemberWithUserResource.class)
           .block();
 
       return Optional.ofNullable(memberResource);
