@@ -1,4 +1,4 @@
-package pe.edu.upc.iam_service.shared.domain.model.aggregates;
+package pe.edu.upc.requests_service.shared.domain.model.aggregates;
 
 import jakarta.persistence.*;
 import lombok.Getter;
