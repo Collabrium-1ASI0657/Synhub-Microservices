@@ -55,14 +55,11 @@ public class InvitationCommandServiceImpl implements InvitationCommandService {
     if (invitation.isEmpty()) {
       throw new IllegalArgumentException("Invitation with id " + command.invitationId() + " does not exist");
     }
-//    var member = this.memberRepository.findById(command.memberId());
-//    if (member.isEmpty()) {
-//      throw new IllegalArgumentException("Member with id " + command.memberId() + " does not exist");
-//    }
-//    if (!invitation.get().getMember().getId().equals(member.get().getId())) {
-//      throw new IllegalArgumentException("Member with id " + command.memberId() + " is not the owner of the invitation");
-//    }
-//    this.invitationRepository.delete(invitation.get());
+
+    if (!invitation.get().getMemberId().value().equals(command.memberId())) {
+      throw new IllegalArgumentException("Member with id " + command.memberId() + " is not the owner of the invitation");
+    }
+    this.invitationRepository.delete(invitation.get());
   }
 
   private Invitation validateAndGetInvitation(Long invitationId, Long leaderId) {

@@ -8,8 +8,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pe.edu.upc.groups_service.groups.application.clients.iam.IamServiceClient;
 import pe.edu.upc.groups_service.groups.application.clients.tasks.TasksServiceClient;
+import pe.edu.upc.groups_service.groups.domain.model.commands.CancelInvitationCommand;
 import pe.edu.upc.groups_service.groups.domain.model.commands.CreateInvitationCommand;
 import pe.edu.upc.groups_service.groups.domain.model.queries.GetGroupByLeaderIdQuery;
+import pe.edu.upc.groups_service.groups.domain.model.queries.GetInvitationByMemberIdQuery;
 import pe.edu.upc.groups_service.groups.domain.model.queries.GetInvitationsByGroupIdQuery;
 import pe.edu.upc.groups_service.groups.domain.model.queries.GetLeaderByUsernameQuery;
 import pe.edu.upc.groups_service.groups.domain.services.GroupQueryService;
@@ -128,29 +130,25 @@ public class InvitationController {
     return ResponseEntity.ok(invitationResources);
   }
 
-//  @DeleteMapping("/member")
-//  @Operation(summary = "Cancel an invitation", description = "Cancel an existing invitation by a member")
-//  public ResponseEntity<Void> cancelInvitation(@AuthenticationPrincipal UserDetails userDetails) {
-//    String username = userDetails.getUsername();
-//
-//    var getMemberByUsernameQuery = new GetMemberByUsernameQuery(username);
-//
-//    var member = this.memberQueryService.handle(getMemberByUsernameQuery);
-//
-//    if(member.isEmpty()) return ResponseEntity.notFound().build();
-//
-//    Long memberId = member.get().getId();
-//
-//    var getInvitationByMemberIdQuery = new GetInvitationByMemberIdQuery(memberId);
-//
-//    var invitationId = this.invitationQueryService.handle(getInvitationByMemberIdQuery).get().getId();
-//
-//    var cancelInvitationCommand = new CancelInvitationCommand(memberId, invitationId);
-//
-//    this.invitationCommandService.handle(cancelInvitationCommand);
-//
-//    return ResponseEntity.noContent().build();
-//  }
+  @DeleteMapping("/member")
+  @Operation(summary = "Cancel an invitation", description = "Cancel an existing invitation by a member")
+  public ResponseEntity<Void> cancelInvitation(@RequestHeader("X-Username") String username,
+                                               @RequestHeader("Authorization") String authorizationHeader) {
+
+    var member = this.tasksServiceClient.fetchMemberByUsername(username, authorizationHeader);
+    if (member.isEmpty()) {
+      return ResponseEntity.notFound().build();
+    }
+    Long memberId = member.get().id();
+
+    var getInvitationByMemberIdQuery = new GetInvitationByMemberIdQuery(memberId);
+    var invitationId = this.invitationQueryService.handle(getInvitationByMemberIdQuery).get().getId();
+
+    var cancelInvitationCommand = new CancelInvitationCommand(memberId, invitationId);
+    this.invitationCommandService.handle(cancelInvitationCommand);
+
+    return ResponseEntity.noContent().build();
+  }
 
 //  @GetMapping("/member")
 //  @Operation(summary = "Get invitation of a member", description = "Get invitation for a specific member")
