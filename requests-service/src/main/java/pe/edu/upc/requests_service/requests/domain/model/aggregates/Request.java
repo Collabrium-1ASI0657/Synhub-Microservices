@@ -1,13 +1,14 @@
 package pe.edu.upc.requests_service.requests.domain.model.aggregates;
 
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-import nrg.inc.synhubbackend.requests.domain.model.commands.CreateRequestCommand;
-import nrg.inc.synhubbackend.requests.domain.model.valueobjects.RequestStatus;
-import nrg.inc.synhubbackend.requests.domain.model.valueobjects.RequestType;
-import nrg.inc.synhubbackend.shared.domain.model.aggregates.AuditableAbstractAggregateRoot;
-import nrg.inc.synhubbackend.tasks.domain.model.aggregates.Task;
+import pe.edu.upc.requests_service.requests.application.clients.tasks.resources.TaskResource;
+import pe.edu.upc.requests_service.requests.domain.model.commands.CreateRequestCommand;
+import pe.edu.upc.requests_service.requests.domain.model.valueobjects.RequestStatus;
+import pe.edu.upc.requests_service.requests.domain.model.valueobjects.RequestType;
+import pe.edu.upc.requests_service.shared.domain.model.aggregates.AuditableAbstractAggregateRoot;
 
 @Getter
 @Entity
@@ -25,9 +26,10 @@ public class Request extends AuditableAbstractAggregateRoot<Request> {
     private RequestStatus requestStatus;
 
     @Setter
-    @ManyToOne
+    @OneToOne
     @JoinColumn(name = "task_id")
-    private Task task;
+    // TODO: Fix usage of task resource
+    private TaskResource task;
 
     public Request() {
     }
