@@ -6,7 +6,9 @@ import pe.edu.upc.groups_service.groups.domain.model.commands.AcceptInvitationCo
 import pe.edu.upc.groups_service.groups.domain.model.commands.CancelInvitationCommand;
 import pe.edu.upc.groups_service.groups.domain.model.commands.CreateInvitationCommand;
 import pe.edu.upc.groups_service.groups.domain.model.commands.RejectInvitationCommand;
+import pe.edu.upc.groups_service.groups.domain.model.valueobjects.MemberId;
 import pe.edu.upc.groups_service.groups.domain.services.InvitationCommandService;
+import pe.edu.upc.groups_service.groups.infrastructure.messaging.TasksEventPublisher;
 import pe.edu.upc.groups_service.groups.infrastructure.persistence.jpa.repositories.GroupRepository;
 import pe.edu.upc.groups_service.groups.infrastructure.persistence.jpa.repositories.InvitationRepository;
 import pe.edu.upc.groups_service.groups.infrastructure.persistence.jpa.repositories.LeaderRepository;
@@ -19,19 +21,36 @@ public class InvitationCommandServiceImpl implements InvitationCommandService {
   private final InvitationRepository invitationRepository;
   private final GroupRepository groupRepository;
   private final LeaderRepository leaderRepository;
+  private final TasksEventPublisher tasksEventPublisher;
 
   public InvitationCommandServiceImpl(
       InvitationRepository invitationRepository,
       GroupRepository groupRepository,
-      LeaderRepository leaderRepository) {
+      LeaderRepository leaderRepository,
+      TasksEventPublisher tasksEventPublisher) {
+
     this.invitationRepository = invitationRepository;
     this.groupRepository = groupRepository;
     this.leaderRepository = leaderRepository;
+    this.tasksEventPublisher = tasksEventPublisher;
   }
 
   @Override
   public Optional<Invitation> handle(CreateInvitationCommand command) {
-    return Optional.empty();
+    var group = this.groupRepository.findById(command.groupId());
+    if (group.isEmpty()) {
+      throw new IllegalArgumentException("Group with id " + command.groupId() + " does not exist");
+    }
+
+    var memberId = new MemberId(command.memberId());
+    if (this.invitationRepository.existsByMemberId(memberId)) {
+      throw new IllegalArgumentException("Member with id " + memberId.value() + " already has an invitation");
+    }
+
+    var createdInvitation = new Invitation(memberId, group.get());
+    this.invitationRepository.save(createdInvitation);
+
+    return Optional.of(createdInvitation);
   }
 
   @Override
@@ -40,14 +59,11 @@ public class InvitationCommandServiceImpl implements InvitationCommandService {
     if (invitation.isEmpty()) {
       throw new IllegalArgumentException("Invitation with id " + command.invitationId() + " does not exist");
     }
-//    var member = this.memberRepository.findById(command.memberId());
-//    if (member.isEmpty()) {
-//      throw new IllegalArgumentException("Member with id " + command.memberId() + " does not exist");
-//    }
-//    if (!invitation.get().getMember().getId().equals(member.get().getId())) {
-//      throw new IllegalArgumentException("Member with id " + command.memberId() + " is not the owner of the invitation");
-//    }
-//    this.invitationRepository.delete(invitation.get());
+
+    if (!invitation.get().getMemberId().value().equals(command.memberId())) {
+      throw new IllegalArgumentException("Member with id " + command.memberId() + " is not the owner of the invitation");
+    }
+    this.invitationRepository.delete(invitation.get());
   }
 
   private Invitation validateAndGetInvitation(Long invitationId, Long leaderId) {
@@ -74,15 +90,14 @@ public class InvitationCommandServiceImpl implements InvitationCommandService {
   public void handle(AcceptInvitationCommand command) {
     var invitation = validateAndGetInvitation(command.invitationId(), command.leaderId());
 
-//    var member = invitation.getMember();
-//    var group = invitation.getGroup();
-//
-//    member.setGroup(group);
-//    group.getMembers().add(member);
-//    group.setMemberCount(group.getMembers().size());
-//    this.memberRepository.save(member);
-//    this.groupRepository.save(group);
-//
-//    this.invitationRepository.delete(invitation);
+    var member = invitation.getMemberId();
+    assert member != null;
+    var group = invitation.getGroup();
+
+    tasksEventPublisher.publishInvitationAccepted(group.getId(), member.value());
+    group.increaseMemberCount();
+
+    this.groupRepository.save(group);
+    this.invitationRepository.delete(invitation);
   }
 }

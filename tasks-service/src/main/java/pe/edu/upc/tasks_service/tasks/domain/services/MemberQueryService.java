@@ -38,7 +38,7 @@ public interface MemberQueryService {
    * @param query the query containing the group ID
    * @return a list of members belonging to the specified group
    */
-  List<Member> handle(GetMembersByGroupIdQuery query);
+  List<UserResource> handle(GetMembersByGroupIdQuery query);
 
   Optional<UserResource> handle(GetMemberInfoByIdQuery query);
 }

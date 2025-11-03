@@ -55,8 +55,21 @@ public class MemberQueryServiceImpl implements MemberQueryService {
   }
 
   @Override
-  public List<Member> handle(GetMembersByGroupIdQuery query) {
-    return memberRepository.findMembersByGroupId(new GroupId(query.groupId()));
+  public List<UserResource> handle(GetMembersByGroupIdQuery query) {
+    var groupId = new GroupId(query.groupId());
+    var members = memberRepository.findMembersByGroupId(groupId);
+
+    // Por cada member, consultamos su información en el IAM service
+    return members.stream()
+        .map(member -> iamServiceClient.fetchUserByMemberId(
+            member.getId(), query.authorizationHeader())
+        )
+        .filter(Optional::isPresent) // solo los que existan
+        .map(Optional::get)
+        .filter(user -> user.roles().stream()
+            .anyMatch(role -> role.equals("ROLE_MEMBER"))
+        )
+        .toList();
   }
 
   @Override
