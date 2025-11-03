@@ -8,10 +8,13 @@ import org.springframework.web.bind.annotation.*;
 import pe.edu.upc.tasks_service.tasks.domain.model.queries.GetMemberByIdQuery;
 import pe.edu.upc.tasks_service.tasks.domain.model.queries.GetMemberByUsernameQuery;
 import pe.edu.upc.tasks_service.tasks.domain.model.queries.GetMemberInfoByIdQuery;
+import pe.edu.upc.tasks_service.tasks.domain.model.queries.GetMembersByGroupIdQuery;
 import pe.edu.upc.tasks_service.tasks.domain.services.MemberQueryService;
 import pe.edu.upc.tasks_service.tasks.interfaces.rest.resources.MemberOnlyResource;
 import pe.edu.upc.tasks_service.tasks.interfaces.rest.resources.MemberResource;
 import pe.edu.upc.tasks_service.tasks.interfaces.rest.transform.MemberResourceFromEntityAssembler;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/member")
@@ -22,6 +25,24 @@ public class MemberController {
 
   public MemberController(MemberQueryService memberQueryService) {
     this.memberQueryService = memberQueryService;
+  }
+
+  @GetMapping()
+  @Operation(summary = "Get members by groupId",  description = "Fetches all the members of a group.")
+  public ResponseEntity<List<MemberResource>> getMembersByGroupId(@RequestParam Long groupId,
+                                                                  @RequestHeader("Authorization") String authorizationHeader) {
+    var getMembersByGroupIdQuery = new GetMembersByGroupIdQuery(groupId, authorizationHeader);
+    var members = this.memberQueryService.handle(getMembersByGroupIdQuery);
+    if (members == null || members.isEmpty()) {
+      return ResponseEntity.noContent().build();
+    }
+
+    // Mapear cada UserResource a MemberResource
+    var memberResources = members.stream()
+        .map(user -> MemberResourceFromEntityAssembler.toResourceFromUserResource(user, user.member().id()))
+        .toList();
+
+    return ResponseEntity.ok(memberResources);
   }
 
   @GetMapping("/details")
