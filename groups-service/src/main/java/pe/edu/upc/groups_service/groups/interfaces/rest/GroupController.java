@@ -34,6 +34,18 @@ public class GroupController {
     this.tasksServiceClient = tasksServiceClient;
   }
 
+  @GetMapping("/{groupId}")
+  @Operation(summary = "Search group by its id.", description = "Search group by id.")
+  public ResponseEntity<GroupResource> getGroupById(@PathVariable Long groupId) {
+    var getGroupByIdQuery = new GetGroupByLeaderIdQuery(groupId);
+    var group = this.groupQueryService.handle(getGroupByIdQuery);
+    if (group.isEmpty()) return ResponseEntity.notFound().build();
+
+    var groupResource = GroupResourceFromEntityAssembler.toResourceFromEntity(group.get());
+
+    return ResponseEntity.ok(groupResource);
+  }
+
   @GetMapping("/search")
   @Operation(summary = "Search for a group by code", description = "Search for a group by code")
   public ResponseEntity<GroupResource> searchGroupByCode(@RequestParam String code) {
