@@ -55,4 +55,8 @@ public class Group extends AuditableAbstractAggregateRoot<Group> {
   public void increaseMemberCount() {
     this.memberCount++;
   }
+
+  public void decreaseMemberCount() {
+    this.memberCount--;
+  }
 }

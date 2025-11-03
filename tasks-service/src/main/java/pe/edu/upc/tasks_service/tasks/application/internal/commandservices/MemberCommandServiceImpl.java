@@ -4,6 +4,7 @@ import org.springframework.stereotype.Service;
 import pe.edu.upc.tasks_service.tasks.domain.model.aggregates.Member;
 import pe.edu.upc.tasks_service.tasks.domain.model.commands.AddGroupToMemberCommand;
 import pe.edu.upc.tasks_service.tasks.domain.model.commands.CreateMemberCommand;
+import pe.edu.upc.tasks_service.tasks.domain.model.commands.RemoveMemberFromGroupCommand;
 import pe.edu.upc.tasks_service.tasks.domain.model.valueobjects.GroupId;
 import pe.edu.upc.tasks_service.tasks.domain.services.MemberCommandService;
 import pe.edu.upc.tasks_service.tasks.infrastructure.messaging.IamEventPublisher;
@@ -41,5 +42,14 @@ public class MemberCommandServiceImpl implements MemberCommandService {
     var updatedMember = memberRepository.save(member.get());
 
     return Optional.of(updatedMember);
+  }
+
+  @Override
+  public Optional<Member> handle(RemoveMemberFromGroupCommand command) {
+    var member = memberRepository.findById(command.memberId());
+    if (member.isEmpty()){ throw new RuntimeException("Member not found"); }
+    member.get().setGroupId(null);
+    memberRepository.save(member.get());
+    return member;
   }
 }

@@ -6,6 +6,7 @@ import pe.edu.upc.groups_service.groups.domain.model.commands.*;
 import pe.edu.upc.groups_service.groups.domain.model.valueobjects.GroupCode;
 import pe.edu.upc.groups_service.groups.domain.model.valueobjects.LeaderId;
 import pe.edu.upc.groups_service.groups.domain.services.GroupCommandService;
+import pe.edu.upc.groups_service.groups.infrastructure.messaging.TasksEventPublisher;
 import pe.edu.upc.groups_service.groups.infrastructure.persistence.jpa.repositories.GroupRepository;
 import pe.edu.upc.groups_service.groups.infrastructure.persistence.jpa.repositories.LeaderRepository;
 
@@ -16,10 +17,14 @@ public class GroupCommandServiceImpl implements GroupCommandService {
 
   private final GroupRepository groupRepository;
   private final LeaderRepository leaderRepository;
+  private final TasksEventPublisher tasksEventPublisher;
 
-  public GroupCommandServiceImpl(GroupRepository groupRepository, LeaderRepository leaderRepository) {
+  public GroupCommandServiceImpl(GroupRepository groupRepository,
+                                 LeaderRepository leaderRepository,
+                                 TasksEventPublisher tasksEventPublisher) {
     this.groupRepository = groupRepository;
     this.leaderRepository = leaderRepository;
+    this.tasksEventPublisher = tasksEventPublisher;
   }
 
 
@@ -91,22 +96,15 @@ public class GroupCommandServiceImpl implements GroupCommandService {
     var group = groupRepository.findById(groupId)
         .orElseThrow(() -> new IllegalArgumentException("Group with id " + groupId + " does not exist"));
 
-//    var member = memberRepository.findById(command.memberId())
-//        .orElseThrow(() -> new IllegalArgumentException("Member with id " + command.memberId() + " does not exist"));
-//
-//    if (!group.getMembers().contains(member)) {
-//      throw new IllegalArgumentException("Member with id " + command.memberId() + " does not exist in group with id " + groupId);
-//    }
-//
-//    try {
-//      group.getMembers().remove(member);
-//      member.setGroup(null);
-//      group.setMemberCount(group.getMembers().size());
-//      memberRepository.save(member);
-//      groupRepository.save(group);
-//    } catch (Exception e) {
-//      throw new IllegalArgumentException("Error while removing member from group: " + e.getMessage());
-//    }
+    try {
+      group.decreaseMemberCount();
+      groupRepository.save(group);
+
+      tasksEventPublisher.publishMemberRemoved(groupId, command.memberId());
+
+    } catch (Exception e) {
+      throw new IllegalArgumentException("Error while removing member from group: " + e.getMessage());
+    }
   }
 
   @Override

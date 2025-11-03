@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pe.edu.upc.groups_service.groups.domain.model.commands.CreateGroupCommand;
 import pe.edu.upc.groups_service.groups.domain.model.commands.DeleteGroupCommand;
+import pe.edu.upc.groups_service.groups.domain.model.commands.RemoveMemberFromGroupCommand;
 import pe.edu.upc.groups_service.groups.domain.model.commands.UpdateGroupCommand;
 import pe.edu.upc.groups_service.groups.domain.model.queries.GetGroupByLeaderIdQuery;
 import pe.edu.upc.groups_service.groups.domain.model.queries.GetLeaderByUsernameQuery;
@@ -117,7 +118,13 @@ public class LeaderGroupController {
   public ResponseEntity<Void> removeMemberFromGroup(@RequestHeader("X-Username") String username,
                                                     @RequestHeader("Authorization") String authorizationHeader,
                                                     @PathVariable Long memberId) {
+    var getLeaderByUsernameQuery = new GetLeaderByUsernameQuery(username);
+    var leaderWithUserInfo = this.leaderQueryService.handle(getLeaderByUsernameQuery, authorizationHeader);
+    if (leaderWithUserInfo.isEmpty()) return ResponseEntity.notFound().build();
+    Long leaderId = leaderWithUserInfo.get().leader().getId();
 
-    return null;
+    var removeMemberFromGroupCommand = new RemoveMemberFromGroupCommand(leaderId, memberId);
+    this.groupCommandService.handle(removeMemberFromGroupCommand);
+    return ResponseEntity.noContent().build();
   }
 }

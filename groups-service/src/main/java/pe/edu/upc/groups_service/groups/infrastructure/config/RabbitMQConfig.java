@@ -27,6 +27,7 @@ public class RabbitMQConfig {
   // -------------------------------------------------------
   public static final String TASKS_EXCHANGE_NAME = "tasks-events-exchange";
   public static final String ROUTING_KEY_GROUP_ACCEPTED = "group.accepted";
+  public static final String ROUTING_KEY_MEMBER_REMOVED = "group.member.removed";
 
   // -------------------------------------------------------
   // BEANS DE INFRAESTRUCTURA

@@ -29,6 +29,9 @@ public class RabbitMQConfig {
   public static final String ROUTING_KEY_GROUP_ACCEPTED = "group.accepted";
   public static final String QUEUE_GROUP_ACCEPTED = "tasks.group-accepted";
 
+  public static final String ROUTING_KEY_MEMBER_REMOVED = "group.member.removed";
+  public static final String QUEUE_MEMBER_REMOVED = "tasks.member-removed";
+
   // -------------------------------------------------------
   // EVENTOS QUE TASKS PRODUCE (respuesta a IAM)
   // -------------------------------------------------------
@@ -80,5 +83,17 @@ public class RabbitMQConfig {
     return BindingBuilder.bind(groupAcceptedQueue)
         .to(tasksExchange)
         .with(ROUTING_KEY_GROUP_ACCEPTED);
+  }
+
+  @Bean
+  public Queue memberRemovedQueue() {
+    return new Queue(QUEUE_MEMBER_REMOVED, true);
+  }
+
+  @Bean
+  public Binding memberRemovedBinding(Queue memberRemovedQueue, TopicExchange tasksExchange) {
+    return BindingBuilder.bind(memberRemovedQueue)
+        .to(tasksExchange)
+        .with(ROUTING_KEY_MEMBER_REMOVED);
   }
 }
