@@ -8,6 +8,7 @@ import pe.edu.upc.groups_service.groups.domain.model.commands.CreateInvitationCo
 import pe.edu.upc.groups_service.groups.domain.model.commands.RejectInvitationCommand;
 import pe.edu.upc.groups_service.groups.domain.model.valueobjects.MemberId;
 import pe.edu.upc.groups_service.groups.domain.services.InvitationCommandService;
+import pe.edu.upc.groups_service.groups.infrastructure.messaging.TasksEventPublisher;
 import pe.edu.upc.groups_service.groups.infrastructure.persistence.jpa.repositories.GroupRepository;
 import pe.edu.upc.groups_service.groups.infrastructure.persistence.jpa.repositories.InvitationRepository;
 import pe.edu.upc.groups_service.groups.infrastructure.persistence.jpa.repositories.LeaderRepository;
@@ -20,15 +21,18 @@ public class InvitationCommandServiceImpl implements InvitationCommandService {
   private final InvitationRepository invitationRepository;
   private final GroupRepository groupRepository;
   private final LeaderRepository leaderRepository;
+  private final TasksEventPublisher tasksEventPublisher;
 
   public InvitationCommandServiceImpl(
       InvitationRepository invitationRepository,
       GroupRepository groupRepository,
-      LeaderRepository leaderRepository) {
+      LeaderRepository leaderRepository,
+      TasksEventPublisher tasksEventPublisher) {
 
     this.invitationRepository = invitationRepository;
     this.groupRepository = groupRepository;
     this.leaderRepository = leaderRepository;
+    this.tasksEventPublisher = tasksEventPublisher;
   }
 
   @Override
@@ -86,15 +90,14 @@ public class InvitationCommandServiceImpl implements InvitationCommandService {
   public void handle(AcceptInvitationCommand command) {
     var invitation = validateAndGetInvitation(command.invitationId(), command.leaderId());
 
-//    var member = invitation.getMember();
-//    var group = invitation.getGroup();
-//
-//    member.setGroup(group);
-//    group.getMembers().add(member);
-//    group.setMemberCount(group.getMembers().size());
-//    this.memberRepository.save(member);
-//    this.groupRepository.save(group);
-//
-//    this.invitationRepository.delete(invitation);
+    var member = invitation.getMemberId();
+    assert member != null;
+    var group = invitation.getGroup();
+
+    tasksEventPublisher.publishInvitationAccepted(group.getId(), member.value());
+    group.increaseMemberCount();
+
+    this.groupRepository.save(group);
+    this.invitationRepository.delete(invitation);
   }
 }
