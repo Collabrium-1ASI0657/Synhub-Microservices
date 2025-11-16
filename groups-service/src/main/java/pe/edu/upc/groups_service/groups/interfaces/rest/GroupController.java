@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pe.edu.upc.groups_service.groups.application.clients.tasks.TasksServiceClient;
 import pe.edu.upc.groups_service.groups.domain.model.queries.GetGroupByCodeQuery;
+import pe.edu.upc.groups_service.groups.domain.model.queries.GetGroupByIdQuery;
 import pe.edu.upc.groups_service.groups.domain.model.queries.GetGroupByLeaderIdQuery;
 import pe.edu.upc.groups_service.groups.domain.model.queries.GetLeaderByUsernameQuery;
 import pe.edu.upc.groups_service.groups.domain.services.GroupQueryService;
@@ -37,7 +38,7 @@ public class GroupController {
   @GetMapping("/{groupId}")
   @Operation(summary = "Search group by its id.", description = "Search group by id.")
   public ResponseEntity<GroupResource> getGroupById(@PathVariable Long groupId) {
-    var getGroupByIdQuery = new GetGroupByLeaderIdQuery(groupId);
+    var getGroupByIdQuery = new GetGroupByIdQuery(groupId);
     var group = this.groupQueryService.handle(getGroupByIdQuery);
     if (group.isEmpty()) return ResponseEntity.notFound().build();
 
