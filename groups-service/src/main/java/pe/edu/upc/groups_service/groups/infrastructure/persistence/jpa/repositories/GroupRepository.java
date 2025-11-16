@@ -4,7 +4,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import pe.edu.upc.groups_service.groups.domain.model.aggregates.Group;
 import pe.edu.upc.groups_service.groups.domain.model.valueobjects.GroupCode;
-import pe.edu.upc.groups_service.groups.domain.model.valueobjects.LeaderId;
 
 import java.util.Optional;
 
