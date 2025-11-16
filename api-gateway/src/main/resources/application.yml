@@ -40,7 +40,7 @@ server:
 eureka:
   client:
     service-url:
-      defaultZone: https://discovery-server-synhub.onrender.com/eureka/
+      defaultZone: http://localhost:8761/eureka/
 
 management:
   endpoints:
