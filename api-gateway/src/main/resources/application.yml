@@ -27,7 +27,7 @@ spring:
             - StripPrefix=1
 
         # TASKS service - privado
-        - id: tasks-service
+        - id: tasks-service         
           uri: lb://tasks-service
           predicates:
             - Path=/tasks/**
@@ -40,4 +40,11 @@ server:
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: https://discovery-server-synhub.onrender.com/eureka/
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
