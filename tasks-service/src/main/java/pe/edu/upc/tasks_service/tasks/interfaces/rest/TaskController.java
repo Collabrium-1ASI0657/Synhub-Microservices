@@ -9,6 +9,7 @@ import pe.edu.upc.tasks_service.tasks.application.clients.iam.IamServiceClient;
 import pe.edu.upc.tasks_service.tasks.domain.model.commands.DeleteTaskCommand;
 import pe.edu.upc.tasks_service.tasks.domain.model.commands.UpdateTaskStatusCommand;
 import pe.edu.upc.tasks_service.tasks.domain.model.queries.GetAllTaskByStatusQuery;
+import pe.edu.upc.tasks_service.tasks.domain.model.queries.GetAllTasksByGroupIdQuery;
 import pe.edu.upc.tasks_service.tasks.domain.model.queries.GetTaskByIdQuery;
 import pe.edu.upc.tasks_service.tasks.domain.services.TaskCommandService;
 import pe.edu.upc.tasks_service.tasks.domain.services.TaskQueryService;
@@ -121,5 +122,26 @@ public class TaskController {
     this.taskCommandService.handle(deleteTaskCommand);
 
     return ResponseEntity.noContent().build();
+  }
+
+  @GetMapping
+  @Operation(summary = "Get all tasks by groupId", description = "Get all tasks by groupId")
+  public ResponseEntity<List<TaskResource>> getTasksByGroupId(
+      @RequestParam Long groupId,
+      @RequestHeader("Authorization") String authorizationHeader) {
+    var getAllTasksByGroupId = new GetAllTasksByGroupIdQuery(groupId);
+    var tasks = taskQueryService.handle(getAllTasksByGroupId);
+    if (tasks.isEmpty()) return ResponseEntity.ok(List.of());
+
+    var taskResources = tasks.stream().map(task -> {
+          var memberId = task.getMember().getId();
+          var userResource = iamServiceClient.fetchUserByMemberId(memberId, authorizationHeader);
+          if (userResource.isEmpty()) return null;
+
+          return TaskResourceFromEntityAssembler.toResourceFromEntity(task, userResource.get());
+        }).filter(resource -> resource != null)
+        .toList();
+
+    return ResponseEntity.ok(taskResources);
   }
 }
