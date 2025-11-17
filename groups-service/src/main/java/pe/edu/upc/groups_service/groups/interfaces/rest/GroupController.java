@@ -3,11 +3,10 @@ package pe.edu.upc.groups_service.groups.interfaces.rest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import pe.edu.upc.groups_service.groups.application.clients.tasks.TasksServiceClient;
 import pe.edu.upc.groups_service.groups.domain.model.queries.GetGroupByCodeQuery;
+import pe.edu.upc.groups_service.groups.domain.model.queries.GetGroupByIdQuery;
 import pe.edu.upc.groups_service.groups.domain.model.queries.GetGroupByLeaderIdQuery;
 import pe.edu.upc.groups_service.groups.domain.model.queries.GetLeaderByUsernameQuery;
 import pe.edu.upc.groups_service.groups.domain.services.GroupQueryService;
@@ -26,10 +25,26 @@ import java.util.stream.Collectors;
 public class GroupController {
   private final GroupQueryService groupQueryService;
   private final LeaderQueryService leaderQueryService;
+  private final TasksServiceClient tasksServiceClient;
 
-  public GroupController(GroupQueryService groupQueryService, LeaderQueryService leaderQueryService) {
+  public GroupController(GroupQueryService groupQueryService,
+                         LeaderQueryService leaderQueryService,
+                         TasksServiceClient tasksServiceClient) {
     this.groupQueryService = groupQueryService;
     this.leaderQueryService = leaderQueryService;
+    this.tasksServiceClient = tasksServiceClient;
+  }
+
+  @GetMapping("/{groupId}")
+  @Operation(summary = "Search group by its id.", description = "Search group by id.")
+  public ResponseEntity<GroupResource> getGroupById(@PathVariable Long groupId) {
+    var getGroupByIdQuery = new GetGroupByIdQuery(groupId);
+    var group = this.groupQueryService.handle(getGroupByIdQuery);
+    if (group.isEmpty()) return ResponseEntity.notFound().build();
+
+    var groupResource = GroupResourceFromEntityAssembler.toResourceFromEntity(group.get());
+
+    return ResponseEntity.ok(groupResource);
   }
 
   @GetMapping("/search")
@@ -44,33 +59,33 @@ public class GroupController {
     return ResponseEntity.ok(groupResource);
   }
 
-//  @GetMapping("/members")
-//  @Operation(summary = "Get all group members", description = "Retrieve all members of a group")
-//  public ResponseEntity<List<GroupMemberResource>> getAllMembersByGroupId(@AuthenticationPrincipal UserDetails userDetails) {
-//    String username = userDetails.getUsername();
-//
-//    var getLeaderByUsernameQuery = new GetLeaderByUsernameQuery(username);
-//
-//    var leader = this.leaderQueryService.handle(getLeaderByUsernameQuery);
-//
-//    if (leader.isEmpty()) return ResponseEntity.notFound().build();
-//
-//    var getGroupByLeaderIdQuery = new GetGroupByLeaderIdQuery(leader.get().getId());
-//
-//    var group = this.groupQueryService.handle(getGroupByLeaderIdQuery);
-//
-//    if (group.isEmpty()) return ResponseEntity.notFound().build();
-//
-//    Long groupId = group.get().getId();
-//
-//    var members = externalMemberService.getMembersByGroupId(groupId);
-//
-//    var memberResources = members.stream()
-//        .map(GroupMemberResourceFromEntityAssembler::toResourceFromEntity)
-//        .collect(Collectors.toList());
-//
-//    return ResponseEntity.ok(memberResources);
-//  }
+  @GetMapping("/members")
+  @Operation(summary = "Get all group members", description = "Retrieve all members of a group")
+  public ResponseEntity<List<GroupMemberResource>> getAllMembersByGroupId(@RequestHeader("X-Username") String username,
+                                                                          @RequestHeader("Authorization") String authorizationHeader) {
+    // 1. Obtener el líder autenticado
+    var getLeaderByUsernameQuery = new GetLeaderByUsernameQuery(username);
+    var leaderWithUserInfo = this.leaderQueryService.handle(getLeaderByUsernameQuery, authorizationHeader);
+    if (leaderWithUserInfo.isEmpty()) return ResponseEntity.notFound().build();
+
+    // 2. Obtener el grupo asociado al líder
+    var getGroupByLeaderIdQuery = new GetGroupByLeaderIdQuery(leaderWithUserInfo.get().leader().getId());
+    var group = this.groupQueryService.handle(getGroupByLeaderIdQuery);
+    if (group.isEmpty()) return ResponseEntity.notFound().build();
+
+    Long groupId = group.get().getId();
+
+    // 3. Obtener los miembros desde tasks-service
+    var members = tasksServiceClient.fetchMembersByGroupId(groupId, authorizationHeader);
+    if (members == null || members.isEmpty()) return ResponseEntity.noContent().build();
+
+    // 4. Mapearlos con el assembler
+    var memberResources = members.stream()
+        .map(GroupMemberResourceFromEntityAssembler::toResourceFromEntity)
+        .collect(Collectors.toList());
+
+    return ResponseEntity.ok(memberResources);
+  }
 
 //  @GetMapping("/tasks")
 //  @Operation(summary = "Get all tasks by group ID", description = "Retrieve all tasks associated with a specific group ID")

@@ -11,14 +11,30 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class RabbitMQConfig {
-  // Mismo exchange general usado por todos los servicios
+  // -------------------------------------------------------
+  // EXCHANGE GENERAL (usado por IAM)
+  // -------------------------------------------------------
   public static final String EXCHANGE_NAME = "iam-events-exchange";
 
-  // Evento que Tasks CONSUME
+  // -------------------------------------------------------
+  // EVENTOS QUE TASKS CONSUME (desde IAM)
+  // -------------------------------------------------------
   public static final String ROUTING_KEY_MEMBER_CREATED = "member.created";
   public static final String QUEUE_MEMBER_CREATED = "tasks.member-created";
 
-  // Evento que Tasks PRODUCE (respuesta)
+  // -------------------------------------------------------
+  // EVENTOS QUE TASKS CONSUME (desde GROUPS)
+  // -------------------------------------------------------
+  public static final String TASKS_EXCHANGE_NAME = "tasks-events-exchange";
+  public static final String ROUTING_KEY_GROUP_ACCEPTED = "group.accepted";
+  public static final String QUEUE_GROUP_ACCEPTED = "tasks.group-accepted";
+
+  public static final String ROUTING_KEY_MEMBER_REMOVED = "group.member.removed";
+  public static final String QUEUE_MEMBER_REMOVED = "tasks.member-removed";
+
+  // -------------------------------------------------------
+  // EVENTOS QUE TASKS PRODUCE (respuesta a IAM)
+  // -------------------------------------------------------
   public static final String ROUTING_KEY_MEMBER_CREATED_SUCCESS = "member.created.success";
 
   // -------------------------------------------------------
@@ -30,10 +46,18 @@ public class RabbitMQConfig {
   }
 
   @Bean
+  public TopicExchange tasksExchange() {
+    return new TopicExchange(TASKS_EXCHANGE_NAME);
+  }
+
+  @Bean
   public MessageConverter jsonMessageConverter() {
     return new Jackson2JsonMessageConverter();
   }
 
+  // -------------------------------------------------------
+  // COLAS Y BINDINGS: IAM → TASKS
+  // -------------------------------------------------------
   @Bean
   public Queue memberCreatedQueue() {
     return new Queue(QUEUE_MEMBER_CREATED, true);
@@ -44,5 +68,32 @@ public class RabbitMQConfig {
     return BindingBuilder.bind(memberCreatedQueue)
         .to(exchange)
         .with(ROUTING_KEY_MEMBER_CREATED);
+  }
+
+  // -------------------------------------------------------
+  // COLAS Y BINDINGS: GROUPS → TASKS
+  // -------------------------------------------------------
+  @Bean
+  public Queue groupAcceptedQueue() {
+    return new Queue(QUEUE_GROUP_ACCEPTED, true);
+  }
+
+  @Bean
+  public Binding groupAcceptedBinding(Queue groupAcceptedQueue, TopicExchange tasksExchange) {
+    return BindingBuilder.bind(groupAcceptedQueue)
+        .to(tasksExchange)
+        .with(ROUTING_KEY_GROUP_ACCEPTED);
+  }
+
+  @Bean
+  public Queue memberRemovedQueue() {
+    return new Queue(QUEUE_MEMBER_REMOVED, true);
+  }
+
+  @Bean
+  public Binding memberRemovedBinding(Queue memberRemovedQueue, TopicExchange tasksExchange) {
+    return BindingBuilder.bind(memberRemovedQueue)
+        .to(tasksExchange)
+        .with(ROUTING_KEY_MEMBER_REMOVED);
   }
 }

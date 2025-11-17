@@ -42,6 +42,7 @@ public class LeaderController {
     var getLeaderByUsernameQuery = new GetLeaderByUsernameQuery(username);
     var leaderWithUserInfo = this.leaderQueryService.handle(getLeaderByUsernameQuery, authorizationHeader);
     if (leaderWithUserInfo.isEmpty()) return ResponseEntity.notFound().build();
+
     var leaderResource = LeaderResourceFromEntityAssembler.toResourceFromEntity(leaderWithUserInfo.get());
     return ResponseEntity.ok(leaderResource);
   }

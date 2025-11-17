@@ -51,4 +51,12 @@ public class Group extends AuditableAbstractAggregateRoot<Group> {
     this.description = command.description().isEmpty() ? this.description : command.description();
     this.imgUrl = command.imgUrl().isEmpty() ? this.imgUrl : new ImgUrl(command.imgUrl());
   }
+
+  public void increaseMemberCount() {
+    this.memberCount++;
+  }
+
+  public void decreaseMemberCount() {
+    this.memberCount--;
+  }
 }

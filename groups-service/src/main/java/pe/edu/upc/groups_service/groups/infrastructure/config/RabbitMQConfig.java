@@ -23,11 +23,23 @@ public class RabbitMQConfig {
   public static final String QUEUE_LEADER_CREATED = "groups.leader-created";
 
   // -------------------------------------------------------
+  // EXCHANGE PARA PUBLICAR EVENTOS HACIA TASKS
+  // -------------------------------------------------------
+  public static final String TASKS_EXCHANGE_NAME = "tasks-events-exchange";
+  public static final String ROUTING_KEY_GROUP_ACCEPTED = "group.accepted";
+  public static final String ROUTING_KEY_MEMBER_REMOVED = "group.member.removed";
+
+  // -------------------------------------------------------
   // BEANS DE INFRAESTRUCTURA
   // -------------------------------------------------------
   @Bean
   public TopicExchange exchange() {
     return new TopicExchange(EXCHANGE_NAME);
+  }
+
+  @Bean
+  public TopicExchange tasksExchange() {
+    return new TopicExchange(TASKS_EXCHANGE_NAME);
   }
 
   @Bean
