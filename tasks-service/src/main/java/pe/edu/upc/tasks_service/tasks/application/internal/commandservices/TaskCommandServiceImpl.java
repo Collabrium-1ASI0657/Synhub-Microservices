@@ -1,8 +1,10 @@
 package pe.edu.upc.tasks_service.tasks.application.internal.commandservices;
 
 import org.springframework.stereotype.Service;
+import pe.edu.upc.tasks_service.tasks.application.clients.groups.GroupsServiceClient;
 import pe.edu.upc.tasks_service.tasks.domain.model.aggregates.Task;
 import pe.edu.upc.tasks_service.tasks.domain.model.commands.*;
+import pe.edu.upc.tasks_service.tasks.domain.model.valueobjects.GroupId;
 import pe.edu.upc.tasks_service.tasks.domain.services.TaskCommandService;
 import pe.edu.upc.tasks_service.tasks.infrastructure.persistence.jpa.repositories.MemberRepository;
 import pe.edu.upc.tasks_service.tasks.infrastructure.persistence.jpa.repositories.TaskRepository;
@@ -13,16 +15,42 @@ import java.util.Optional;
 public class TaskCommandServiceImpl implements TaskCommandService {
   private final TaskRepository taskRepository;
   private final MemberRepository memberRepository;
+  private final GroupsServiceClient groupsServiceClient;
 
   public TaskCommandServiceImpl(TaskRepository taskRepository,
-                                MemberRepository memberRepository) {
+                                MemberRepository memberRepository,
+                                GroupsServiceClient groupsServiceClient) {
     this.taskRepository = taskRepository;
     this.memberRepository = memberRepository;
+    this.groupsServiceClient = groupsServiceClient;
   }
 
   @Override
   public Optional<Task> handle(CreateTaskCommand command) {
-    return Optional.empty();
+    var task = new Task(command);
+    var member = this.memberRepository.findById(command.memberId());
+    if (member.isEmpty()) {
+      throw new IllegalArgumentException("Member with id " + command.memberId() + " does not exist");
+    }
+
+    var groupId = member.get().getGroupId().value();
+    if(groupId == null) {
+      throw new IllegalArgumentException("Member with id " + command.memberId() + " does not belong to any group");
+    }
+
+    var group = this.groupsServiceClient.fetchGroupByGroupId(groupId);
+    if (group.isEmpty()) {
+      throw new IllegalArgumentException("Group with id " + groupId + " does not exist");
+    }
+
+    task.setMember(member.get());
+    task.setGroupId(new GroupId(groupId));
+    member.get().addTask(task);
+
+    this.memberRepository.save(member.get());
+    var createdTask = this.taskRepository.save(task);
+
+    return Optional.of(createdTask);
   }
 
   @Override
