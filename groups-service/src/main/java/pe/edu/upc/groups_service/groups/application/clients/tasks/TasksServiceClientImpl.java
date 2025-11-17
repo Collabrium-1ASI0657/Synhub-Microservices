@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import pe.edu.upc.groups_service.groups.application.clients.tasks.resources.MemberWithUserResource;
+import pe.edu.upc.groups_service.groups.application.clients.tasks.resources.TaskResource;
 
 import java.util.List;
 import java.util.Optional;
@@ -17,7 +18,7 @@ public class TasksServiceClientImpl implements TasksServiceClient {
   public TasksServiceClientImpl(@Qualifier("loadBalancedWebClientBuilder") WebClient.Builder webClient) {
     this.webClient = webClient
         .baseUrl("http://tasks-service/api/v1")
-        .build();;
+        .build();
   }
 
   @Override
@@ -96,6 +97,39 @@ public class TasksServiceClientImpl implements TasksServiceClient {
           .block();
 
       return members;
+
+    } catch (WebClientResponseException e) {
+      if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
+        return List.of(); // lista vacía
+      }
+      throw e; // relanzamos otras excepciones
+    } catch (Exception e) {
+      // En caso de error inesperado (timeout, conexión, etc.)
+      e.printStackTrace();
+      return List.of();
+    }
+  }
+
+  @Override
+  public List<TaskResource> fetchTasksByGroupId(Long groupId, String authorizationHeader) {
+    try {
+      var request = webClient.get()
+          .uri(uriBuilder -> uriBuilder
+              .path("/tasks")
+              .queryParam("groupId", groupId)
+              .build());
+
+      if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+        request = request.header("Authorization", authorizationHeader);
+      }
+
+      List<TaskResource> tasks = request
+          .retrieve()
+          .bodyToFlux(TaskResource.class)
+          .collectList()
+          .block();
+
+      return tasks;
 
     } catch (WebClientResponseException e) {
       if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
