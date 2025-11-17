@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pe.edu.upc.tasks_service.tasks.application.clients.iam.IamServiceClient;
+import pe.edu.upc.tasks_service.tasks.domain.model.commands.DeleteTaskCommand;
 import pe.edu.upc.tasks_service.tasks.domain.model.commands.UpdateTaskStatusCommand;
 import pe.edu.upc.tasks_service.tasks.domain.model.queries.GetAllTaskByStatusQuery;
 import pe.edu.upc.tasks_service.tasks.domain.model.queries.GetTaskByIdQuery;
@@ -111,5 +112,14 @@ public class TaskController {
 
     var taskResource = TaskResourceFromEntityAssembler.toResourceFromEntity(task.get(), userResource.get());
     return ResponseEntity.ok(taskResource);
+  }
+
+  @DeleteMapping("/{taskId}")
+  @Operation(summary = "Delete a task by id", description = "Delete a task by id")
+  public ResponseEntity<Void> deleteTask(@PathVariable Long taskId) {
+    var deleteTaskCommand = new DeleteTaskCommand(taskId);
+    this.taskCommandService.handle(deleteTaskCommand);
+
+    return ResponseEntity.noContent().build();
   }
 }
