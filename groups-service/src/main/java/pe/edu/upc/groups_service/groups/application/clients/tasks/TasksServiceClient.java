@@ -1,6 +1,7 @@
 package pe.edu.upc.groups_service.groups.application.clients.tasks;
 
 import pe.edu.upc.groups_service.groups.application.clients.tasks.resources.MemberWithUserResource;
+import pe.edu.upc.groups_service.groups.application.clients.tasks.resources.TaskResource;
 
 import java.util.List;
 import java.util.Optional;
@@ -11,4 +12,6 @@ public interface TasksServiceClient {
   Optional<MemberWithUserResource> fetchMemberByUsername(String username, String authorizationHeader);
 
   List<MemberWithUserResource> fetchMembersByGroupId(Long groupId, String authorizationHeader);
+
+  List<TaskResource> fetchTasksByGroupId(Long groupId, String authorizationHeader);
 }

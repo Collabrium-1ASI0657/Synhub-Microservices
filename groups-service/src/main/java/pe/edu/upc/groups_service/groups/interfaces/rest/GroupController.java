@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pe.edu.upc.groups_service.groups.application.clients.tasks.TasksServiceClient;
+import pe.edu.upc.groups_service.groups.application.clients.tasks.resources.TaskResource;
 import pe.edu.upc.groups_service.groups.domain.model.queries.GetGroupByCodeQuery;
 import pe.edu.upc.groups_service.groups.domain.model.queries.GetGroupByIdQuery;
 import pe.edu.upc.groups_service.groups.domain.model.queries.GetGroupByLeaderIdQuery;
@@ -87,33 +88,23 @@ public class GroupController {
     return ResponseEntity.ok(memberResources);
   }
 
-//  @GetMapping("/tasks")
-//  @Operation(summary = "Get all tasks by group ID", description = "Retrieve all tasks associated with a specific group ID")
-//  public ResponseEntity<List<TaskResource>> getAllTasksByGroupId(@AuthenticationPrincipal UserDetails userDetails) {
-//    String username = userDetails.getUsername();
-//
-//    var getLeaderByUsernameQuery = new GetLeaderByUsernameQuery(username);
-//
-//    var leader = this.leaderQueryService.handle(getLeaderByUsernameQuery);
-//
-//    if (leader.isEmpty()) return ResponseEntity.notFound().build();
-//
-//    var getGroupByLeaderIdQuery = new GetGroupByLeaderIdQuery(leader.get().getId());
-//
-//    var group = this.groupQueryService.handle(getGroupByLeaderIdQuery);
-//
-//    if (group.isEmpty()) return ResponseEntity.notFound().build();
-//
-//    Long groupId = group.get().getId();
-//
-//    var getAllTasksByGroupIdQuery = new GetAllTasksByGroupIdQuery(groupId);
-//
-//    var tasks = taskQueryService.handle(getAllTasksByGroupIdQuery);
-//
-//    var taskResources = tasks.stream()
-//        .map(TaskResourceFromEntityAssembler::toResourceFromEntity)
-//        .collect(Collectors.toList());
-//
-//    return ResponseEntity.ok(taskResources);
-//  }
+  @GetMapping("/tasks")
+  @Operation(summary = "Get all tasks by group ID", description = "Retrieve all tasks associated with a specific group ID")
+  public ResponseEntity<List<TaskResource>> getAllTasksByGroupId(
+      @RequestHeader("X-Username") String username,
+      @RequestHeader("Authorization") String authorizationHeader) {
+    var getLeaderByUsernameQuery = new GetLeaderByUsernameQuery(username);
+    var leader = this.leaderQueryService.handle(getLeaderByUsernameQuery, authorizationHeader);
+    if (leader.isEmpty()) return ResponseEntity.notFound().build();
+
+    var getGroupByLeaderIdQuery = new GetGroupByLeaderIdQuery(leader.get().leader().getId());
+    var group = this.groupQueryService.handle(getGroupByLeaderIdQuery);
+    if (group.isEmpty()) return ResponseEntity.notFound().build();
+    Long groupId = group.get().getId();
+
+    var tasks = tasksServiceClient.fetchTasksByGroupId(groupId, authorizationHeader);
+    if (tasks == null || tasks.isEmpty()) return ResponseEntity.noContent().build();
+
+    return ResponseEntity.ok(tasks);
+  }
 }
