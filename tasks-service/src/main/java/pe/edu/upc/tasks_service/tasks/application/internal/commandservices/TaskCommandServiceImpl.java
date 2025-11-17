@@ -55,7 +55,56 @@ public class TaskCommandServiceImpl implements TaskCommandService {
 
   @Override
   public Optional<Task> handle(UpdateTaskCommand command) {
-    return Optional.empty();
+    var taskOpt = this.taskRepository.findById(command.taskId());
+    if (taskOpt.isEmpty()) {
+      throw new IllegalArgumentException("Task with id " + command.taskId() + " does not exist");
+    }
+
+    var newMemberOpt = this.memberRepository.findById(command.memberId());
+    if (newMemberOpt.isEmpty()) {
+      throw new IllegalArgumentException("Member with id " + command.memberId() + " does not exist");
+    }
+
+    var task = taskOpt.get();
+    var currentMember = task.getMember();
+    var newMember = newMemberOpt.get();
+    var groupId = newMember.getGroupId().value();
+    if(groupId == null) {
+      throw new IllegalArgumentException("Member with id " + command.memberId() + " does not belong to any group");
+    }
+
+    var group = this.groupsServiceClient.fetchGroupByGroupId(groupId);
+    if (group.isEmpty()) {
+      throw new IllegalArgumentException("Group with id " + groupId + " does not exist");
+    }
+
+    var newGroup = this.groupsServiceClient.fetchGroupByGroupId(newMember.getGroupId().value());
+    if (newGroup.isEmpty()) {
+      throw new IllegalArgumentException("Group with id " + groupId + " does not exist");
+    }
+
+    if (currentMember != null && !currentMember.equals(newMember)) {
+      currentMember.removeTask(task);
+      this.memberRepository.save(currentMember);
+      newMember.addTask(task);
+      task.setMember(newMember);
+      task.setGroupId(new GroupId(newGroup.get().id()));
+      this.memberRepository.save(newMember);
+    } else if (currentMember == null) {
+      newMember.addTask(task);
+      task.setMember(newMember);
+      task.setGroupId(new GroupId(newGroup.get().id()));
+      this.memberRepository.save(newMember);
+    }
+
+    task.updateTask(command);
+
+    try{
+      var updatedTask = this.taskRepository.save(task);
+      return Optional.of(updatedTask);
+    } catch (Exception e){
+      throw new IllegalArgumentException("Error updating task: " + e.getMessage());
+    }
   }
 
   @Override

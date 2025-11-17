@@ -6,12 +6,15 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pe.edu.upc.tasks_service.tasks.application.clients.iam.IamServiceClient;
+import pe.edu.upc.tasks_service.tasks.domain.model.commands.UpdateTaskStatusCommand;
 import pe.edu.upc.tasks_service.tasks.domain.model.queries.GetAllTaskByStatusQuery;
 import pe.edu.upc.tasks_service.tasks.domain.model.queries.GetTaskByIdQuery;
 import pe.edu.upc.tasks_service.tasks.domain.services.TaskCommandService;
 import pe.edu.upc.tasks_service.tasks.domain.services.TaskQueryService;
 import pe.edu.upc.tasks_service.tasks.interfaces.rest.resources.TaskResource;
+import pe.edu.upc.tasks_service.tasks.interfaces.rest.resources.UpdateTaskResource;
 import pe.edu.upc.tasks_service.tasks.interfaces.rest.transform.TaskResourceFromEntityAssembler;
+import pe.edu.upc.tasks_service.tasks.interfaces.rest.transform.UpdateTaskCommandFromResourceAssembler;
 
 import java.util.List;
 
@@ -74,5 +77,39 @@ public class TaskController {
         .toList();
 
     return ResponseEntity.ok(taskResources);
+  }
+
+  @PutMapping("/{taskId}/status/{status}")
+  @Operation(summary = "Update task status", description = "Update task status")
+  public ResponseEntity<TaskResource> updateTaskStatus(@PathVariable Long taskId,
+                                                       @PathVariable String status,
+                                                       @RequestHeader("Authorization") String authorizationHeader) {
+    var updateTaskStatusCommand = new UpdateTaskStatusCommand(taskId, status);
+    var task = this.taskCommandService.handle(updateTaskStatusCommand);
+    if (task.isEmpty()) return ResponseEntity.badRequest().build();
+
+    var memberId = task.get().getMember().getId();
+    var userResource = iamServiceClient.fetchUserByMemberId(memberId, authorizationHeader);
+    if (userResource.isEmpty()) return ResponseEntity.notFound().build();
+
+    var taskResource = TaskResourceFromEntityAssembler.toResourceFromEntity(task.get(), userResource.get());
+    return ResponseEntity.ok(taskResource);
+  }
+
+  @PutMapping("/{taskId}")
+  @Operation(summary = "Update task", description = "Update task")
+  public ResponseEntity<TaskResource> updateTask(@PathVariable Long taskId,
+                                                 @RequestBody UpdateTaskResource resource,
+                                                 @RequestHeader("Authorization") String authorizationHeader) {
+    var updateTaskCommand = UpdateTaskCommandFromResourceAssembler.toCommandFromResource(resource, taskId);
+    var task = taskCommandService.handle(updateTaskCommand);
+    if (task.isEmpty()) return ResponseEntity.badRequest().build();
+
+    var memberId = task.get().getMember().getId();
+    var userResource = iamServiceClient.fetchUserByMemberId(memberId, authorizationHeader);
+    if (userResource.isEmpty()) return ResponseEntity.notFound().build();
+
+    var taskResource = TaskResourceFromEntityAssembler.toResourceFromEntity(task.get(), userResource.get());
+    return ResponseEntity.ok(taskResource);
   }
 }
