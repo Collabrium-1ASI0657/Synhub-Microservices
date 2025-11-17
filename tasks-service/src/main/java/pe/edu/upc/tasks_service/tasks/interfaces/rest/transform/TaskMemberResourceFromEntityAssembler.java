@@ -9,7 +9,7 @@ public class TaskMemberResourceFromEntityAssembler {
         user.id(),
         user.name(),
         user.surname(),
-        user.username()
+        user.imgUrl()
     );
   }
 }
