@@ -6,7 +6,7 @@ import pe.edu.upc.tasks_service.tasks.interfaces.rest.resources.TaskMemberResour
 public class TaskMemberResourceFromEntityAssembler {
   public static TaskMemberResource toResourceFromEntity(UserResource user) {
     return new TaskMemberResource(
-        user.id(),
+        user.member().id(),
         user.name(),
         user.surname(),
         user.imgUrl()

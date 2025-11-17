@@ -6,16 +6,19 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pe.edu.upc.tasks_service.tasks.application.clients.groups.GroupsServiceClient;
-import pe.edu.upc.tasks_service.tasks.domain.model.queries.GetMemberByIdQuery;
-import pe.edu.upc.tasks_service.tasks.domain.model.queries.GetMemberByUsernameQuery;
-import pe.edu.upc.tasks_service.tasks.domain.model.queries.GetMemberInfoByIdQuery;
-import pe.edu.upc.tasks_service.tasks.domain.model.queries.GetMembersByGroupIdQuery;
+import pe.edu.upc.tasks_service.tasks.application.clients.iam.IamServiceClient;
+import pe.edu.upc.tasks_service.tasks.domain.model.commands.DeleteTasksByMemberId;
+import pe.edu.upc.tasks_service.tasks.domain.model.queries.*;
 import pe.edu.upc.tasks_service.tasks.domain.services.MemberQueryService;
+import pe.edu.upc.tasks_service.tasks.domain.services.TaskCommandService;
+import pe.edu.upc.tasks_service.tasks.domain.services.TaskQueryService;
 import pe.edu.upc.tasks_service.tasks.interfaces.rest.resources.ExtendedGroupResource;
 import pe.edu.upc.tasks_service.tasks.interfaces.rest.resources.MemberOnlyResource;
 import pe.edu.upc.tasks_service.tasks.interfaces.rest.resources.MemberResource;
+import pe.edu.upc.tasks_service.tasks.interfaces.rest.resources.TaskResource;
 import pe.edu.upc.tasks_service.tasks.interfaces.rest.transform.ExtendedGroupResourceFromEntityAssembler;
 import pe.edu.upc.tasks_service.tasks.interfaces.rest.transform.MemberResourceFromEntityAssembler;
+import pe.edu.upc.tasks_service.tasks.interfaces.rest.transform.TaskResourceFromEntityAssembler;
 
 import java.util.List;
 
@@ -26,11 +29,20 @@ import java.util.List;
 public class MemberController {
   private final MemberQueryService memberQueryService;
   private final GroupsServiceClient groupsServiceClient;
+  private final TaskQueryService taskQueryService;
+  private final TaskCommandService taskCommandService;
+  private final IamServiceClient iamServiceClient;
 
   public MemberController(MemberQueryService memberQueryService,
-                          GroupsServiceClient groupsServiceClient) {
+                          GroupsServiceClient groupsServiceClient,
+                          TaskQueryService taskQueryService,
+                          IamServiceClient iamServiceClient,
+                          TaskCommandService taskCommandService) {
     this.memberQueryService = memberQueryService;
     this.groupsServiceClient = groupsServiceClient;
+    this.taskQueryService = taskQueryService;
+    this.iamServiceClient = iamServiceClient;
+    this.taskCommandService = taskCommandService;
   }
 
   @GetMapping()
@@ -110,5 +122,47 @@ public class MemberController {
     var extendedGroupResource = ExtendedGroupResourceFromEntityAssembler.toResourceFromEntity(group.get(), members);
 
     return ResponseEntity.ok(extendedGroupResource);
+  }
+
+  @GetMapping("/tasks")
+  @Operation(summary = "Get all tasks by authenticated member", description = "Fetches all tasks for the authenticated member.")
+  public ResponseEntity<List<TaskResource>> getAllTasksByMemberAuthenticated(
+      @RequestHeader("X-Username") String username,
+      @RequestHeader("Authorization") String authorizationHeader) {
+    var getMemberByUsernameQuery = new GetMemberByUsernameQuery(username, authorizationHeader);
+    var member = this.memberQueryService.handle(getMemberByUsernameQuery);
+    if(member.isEmpty()) return ResponseEntity.notFound().build();
+
+    var memberId = member.get().member().id();
+    var getAllTasksByMemberId = new GetAllTasksByMemberId(memberId);
+
+    var tasks = taskQueryService.handle(getAllTasksByMemberId);
+    if(tasks.isEmpty()) return ResponseEntity.noContent().build();
+
+    var userResource = iamServiceClient.fetchUserByMemberId(memberId, authorizationHeader);
+    if (userResource.isEmpty()) return ResponseEntity.notFound().build();
+
+    var taskResources = tasks.stream()
+        .map(task -> TaskResourceFromEntityAssembler.toResourceFromEntity(task, userResource.get()))
+        .toList();
+
+    return ResponseEntity.ok(taskResources);
+  }
+
+  @DeleteMapping("/group/leave")
+  @Operation(summary = "Leave group by member authenticated", description = "Allows the authenticated member to leave their group.")
+  public ResponseEntity<Void> leaveGroupByMemberAuthenticated(
+      @RequestHeader("X-Username") String username,
+      @RequestHeader("Authorization") String authorizationHeader) {
+    var getMemberByUsernameQuery = new GetMemberByUsernameQuery(username, authorizationHeader);
+    var member = this.memberQueryService.handle(getMemberByUsernameQuery);
+    if(member.isEmpty()) return ResponseEntity.notFound().build();
+
+    var groupId = member.get().member().groupId();
+    var memberId = member.get().member().id();
+
+    var deleteTasksByMemberId = new DeleteTasksByMemberId(memberId, groupId);
+    taskCommandService.handle(deleteTasksByMemberId);
+    return ResponseEntity.noContent().build();
   }
 }

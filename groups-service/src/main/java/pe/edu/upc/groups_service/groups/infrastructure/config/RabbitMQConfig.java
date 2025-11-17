@@ -29,6 +29,10 @@ public class RabbitMQConfig {
   public static final String ROUTING_KEY_GROUP_ACCEPTED = "group.accepted";
   public static final String ROUTING_KEY_MEMBER_REMOVED = "group.member.removed";
 
+  // Evento emitido por TASKS → GROUPS
+  public static final String ROUTING_KEY_MEMBER_LEFT = "group.member.left";
+  public static final String QUEUE_MEMBER_LEFT = "groups.member-left";
+
   // -------------------------------------------------------
   // BEANS DE INFRAESTRUCTURA
   // -------------------------------------------------------
@@ -61,5 +65,17 @@ public class RabbitMQConfig {
     return BindingBuilder.bind(leaderCreatedQueue)
         .to(exchange)
         .with(ROUTING_KEY_LEADER_CREATED);
+  }
+
+  @Bean
+  public Queue memberLeftQueue() {
+    return new Queue(QUEUE_MEMBER_LEFT, true);
+  }
+
+  @Bean
+  public Binding memberLeftBinding(Queue memberLeftQueue, TopicExchange tasksExchange) {
+    return BindingBuilder.bind(memberLeftQueue)
+        .to(tasksExchange)
+        .with(ROUTING_KEY_MEMBER_LEFT);
   }
 }

@@ -109,24 +109,19 @@ public class GroupCommandServiceImpl implements GroupCommandService {
 
   @Override
   public void handle(LeaveGroupCommand command) {
+    // 1. Obtener grupo
     var group = groupRepository.findById(command.groupId())
         .orElseThrow(() -> new IllegalArgumentException("Group not found for member"));
 
-//    var member = memberRepository.findById(command.memberId())
-//        .orElseThrow(() -> new IllegalArgumentException("Member with id " + command.memberId() + " does not exist"));
-//
-//    if (!group.getMembers().contains(member)) {
-//      throw new IllegalArgumentException("Member with id " + command.memberId() + " does not exist in group with id " + group.getId());
-//    }
-//
-//    try {
-//      group.getMembers().remove(member);
-//      member.setGroup(null);
-//      group.setMemberCount(group.getMembers().size());
-//      memberRepository.save(member);
-//      groupRepository.save(group);
-//    } catch (Exception e) {
-//      throw new IllegalArgumentException("Error while removing member from group: " + e.getMessage());
-//    }
+    try {
+      // 2. Actualizar lógica de dominio
+      group.decreaseMemberCount();
+
+      // 3. Persistir cambios
+      groupRepository.save(group);
+
+    } catch (Exception e) {
+      throw new IllegalArgumentException("Error while member leaving group: " + e.getMessage());
+    }
   }
 }

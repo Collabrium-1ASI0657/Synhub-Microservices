@@ -6,6 +6,7 @@ import pe.edu.upc.tasks_service.tasks.domain.model.aggregates.Task;
 import pe.edu.upc.tasks_service.tasks.domain.model.commands.*;
 import pe.edu.upc.tasks_service.tasks.domain.model.valueobjects.GroupId;
 import pe.edu.upc.tasks_service.tasks.domain.services.TaskCommandService;
+import pe.edu.upc.tasks_service.tasks.infrastructure.messaging.GroupEventsPublisher;
 import pe.edu.upc.tasks_service.tasks.infrastructure.persistence.jpa.repositories.MemberRepository;
 import pe.edu.upc.tasks_service.tasks.infrastructure.persistence.jpa.repositories.TaskRepository;
 
@@ -16,13 +17,16 @@ public class TaskCommandServiceImpl implements TaskCommandService {
   private final TaskRepository taskRepository;
   private final MemberRepository memberRepository;
   private final GroupsServiceClient groupsServiceClient;
+  private final GroupEventsPublisher groupEventsPublisher;
 
   public TaskCommandServiceImpl(TaskRepository taskRepository,
                                 MemberRepository memberRepository,
-                                GroupsServiceClient groupsServiceClient) {
+                                GroupsServiceClient groupsServiceClient,
+                                GroupEventsPublisher groupEventsPublisher) {
     this.taskRepository = taskRepository;
     this.memberRepository = memberRepository;
     this.groupsServiceClient = groupsServiceClient;
+    this.groupEventsPublisher = groupEventsPublisher;
   }
 
   @Override
@@ -150,18 +154,28 @@ public class TaskCommandServiceImpl implements TaskCommandService {
       throw new IllegalArgumentException("Member with id " + memberId + " does not exist");
     }
     try {
+      var member = memberRepository.findById(memberId)
+          .orElseThrow(() -> new IllegalArgumentException("Member not found"));
+
+      // 1. Eliminar sus tasks
       var tasks = this.taskRepository.findByMember_Id(memberId);
-      if (tasks.isEmpty()) {
-        return;
-      }
-      for (var task : tasks) {
-        var member = task.getMember();
-        if (member != null) {
+      if (!tasks.isEmpty()) {
+        for (var task : tasks) {
           member.removeTask(task);
-          this.memberRepository.save(member);
+          this.taskRepository.delete(task);
         }
-        this.taskRepository.delete(task);
       }
+
+      // 2. Romper relación con el grupo
+      member.setGroupId(null);
+      memberRepository.save(member);
+
+      // 3. Publicar evento group.member.left
+      groupEventsPublisher.publishMemberLeft(
+          command.memberId(),
+          command.groupId()
+      );
+
     } catch (Exception e) {
       throw new IllegalArgumentException("Error deleting tasks for member: " + e.getMessage());
     }
