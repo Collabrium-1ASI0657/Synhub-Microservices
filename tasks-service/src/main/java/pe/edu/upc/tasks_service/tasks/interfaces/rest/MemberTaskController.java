@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import pe.edu.upc.tasks_service.tasks.application.clients.iam.IamServiceClient;
 import pe.edu.upc.tasks_service.tasks.domain.model.commands.CreateTaskCommand;
 import pe.edu.upc.tasks_service.tasks.domain.model.queries.GetAllTasksByMemberId;
+import pe.edu.upc.tasks_service.tasks.domain.model.valueobjects.TaskStatus;
 import pe.edu.upc.tasks_service.tasks.domain.services.TaskCommandService;
 import pe.edu.upc.tasks_service.tasks.domain.services.TaskQueryService;
 import pe.edu.upc.tasks_service.tasks.interfaces.rest.resources.CreateTaskResource;
@@ -15,6 +16,8 @@ import pe.edu.upc.tasks_service.tasks.interfaces.rest.resources.TaskResource;
 import pe.edu.upc.tasks_service.tasks.interfaces.rest.transform.CreateTaskCommandFromResourceAssembler;
 import pe.edu.upc.tasks_service.tasks.interfaces.rest.transform.TaskResourceFromEntityAssembler;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -70,6 +73,41 @@ public class MemberTaskController {
         .map(task -> TaskResourceFromEntityAssembler.toResourceFromEntity(task, userResource.get()))
         .toList();
     return ResponseEntity.ok(taskResources);
+  }
+
+  @GetMapping("/{memberId}/tasks/next")
+  @Operation(summary = "Get the next task by member id", description = "Get the next task by member id")
+  public ResponseEntity<TaskResource> getLastNextByMemberId(@PathVariable Long memberId,
+                                                            @RequestHeader("Authorization") String authorizationHeader) {
+    var getAllTasksByMemberId = new GetAllTasksByMemberId(memberId);
+    var tasks = taskQueryService.handle(getAllTasksByMemberId);
+    if (tasks.isEmpty()) return ResponseEntity.notFound().build();
+
+    var inProgressTasks = tasks.stream()
+        .filter(task -> task.getStatus().equals(TaskStatus.IN_PROGRESS))
+        .collect(Collectors.toList());
+    var now = LocalDateTime.now(ZoneId.of("UTC"));
+
+    var nextTask = inProgressTasks.stream()
+        .filter(task -> {
+          if (task.getDueDate() == null) return false;
+          LocalDateTime dueDate = task.getDueDate().toInstant()
+              .atZone(ZoneId.systemDefault())
+              .toLocalDateTime();
+          return !dueDate.isBefore(now);
+        })
+        .min((t1, t2) -> {
+          LocalDateTime d1 = t1.getDueDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+          LocalDateTime d2 = t2.getDueDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+          return d1.compareTo(d2);
+        });
+
+    var userResource = iamServiceClient.fetchUserByMemberId(memberId, authorizationHeader);
+    if (userResource.isEmpty()) return ResponseEntity.notFound().build();
+
+    var taskResource = TaskResourceFromEntityAssembler.toResourceFromEntity(nextTask.get(), userResource.get());
+
+    return ResponseEntity.ok(taskResource);
   }
 
 }
