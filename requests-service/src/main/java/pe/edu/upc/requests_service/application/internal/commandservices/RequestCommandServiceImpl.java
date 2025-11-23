@@ -1,11 +1,14 @@
 package pe.edu.upc.requests_service.application.internal.commandservices;
 
 import org.springframework.stereotype.Service;
+import pe.edu.upc.requests_service.application.clients.tasks.TaskServiceClient;
 import pe.edu.upc.requests_service.domain.model.aggregates.Request;
 import pe.edu.upc.requests_service.domain.model.commands.CreateRequestCommand;
 import pe.edu.upc.requests_service.domain.model.commands.DeleteAllRequestsByTaskIdCommand;
 import pe.edu.upc.requests_service.domain.model.commands.DeleteRequestCommand;
 import pe.edu.upc.requests_service.domain.model.commands.UpdateRequestCommand;
+import pe.edu.upc.requests_service.domain.model.valueobjects.RequestType;
+import pe.edu.upc.requests_service.domain.model.valueobjects.TaskId;
 import pe.edu.upc.requests_service.domain.services.RequestCommandService;
 import pe.edu.upc.requests_service.infrastructure.persistence.jpa.repositories.RequestRepository;
 
@@ -15,15 +18,29 @@ import java.util.Optional;
 public class RequestCommandServiceImpl implements RequestCommandService {
 
     private final RequestRepository requestRepository;
+    private final TaskServiceClient taskServiceClient;
 
-    public RequestCommandServiceImpl(RequestRepository requestRepository) {
+    public RequestCommandServiceImpl(RequestRepository requestRepository, TaskServiceClient taskServiceClient) {
         this.requestRepository = requestRepository;
+        this.taskServiceClient = taskServiceClient;
     }
 
     @Override
     public Long handle(CreateRequestCommand command) {
-        // TODO
-        return 0L;
+        try {
+            RequestType.fromString(command.requestType());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid request type");
+        }
+
+        var task = taskServiceClient.fetchTaskDetailsById(command.taskId());
+
+        if (task.isEmpty())
+            throw new IllegalArgumentException("Task with id " + command.taskId() + " does not exist");
+
+        var request = new Request(command);
+        this.requestRepository.save(request);
+        return request.getId();
     }
 
     @Override

@@ -47,6 +47,7 @@ public class Request extends AuditableAbstractAggregateRoot<Request> {
         this.description = command.description();
         this.requestType = RequestType.fromString(command.requestType());
         this.requestStatus = RequestStatus.PENDING;
+        this.taskId = new TaskId(command.taskId());
     }
 
     public void updateRequestStatus(String requestStatus) {

@@ -2,14 +2,19 @@ package pe.edu.upc.requests_service.interfaces.rest;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import pe.edu.upc.requests_service.application.clients.tasks.TaskServiceClient;
 import pe.edu.upc.requests_service.domain.model.commands.DeleteRequestCommand;
+import pe.edu.upc.requests_service.domain.model.queries.GetRequestByIdQuery;
 import pe.edu.upc.requests_service.domain.model.queries.GetRequestsByTaskIdQuery;
 import pe.edu.upc.requests_service.domain.services.RequestCommandService;
 import pe.edu.upc.requests_service.domain.services.RequestQueryService;
+import pe.edu.upc.requests_service.interfaces.rest.resources.CreateRequestResource;
 import pe.edu.upc.requests_service.interfaces.rest.resources.RequestResource;
+import pe.edu.upc.requests_service.interfaces.rest.transform.CreateRequestCommandFromResourceAssembler;
 import pe.edu.upc.requests_service.interfaces.rest.transform.RequestResourceFromEntityAssembler;
 
 import java.util.List;
@@ -22,10 +27,43 @@ import java.util.stream.Collectors;
 public class RequestController {
     private final RequestCommandService requestCommandService;
     private final RequestQueryService requestQueryService;
+    private final TaskServiceClient taskServiceClient;
 
-    public RequestController(RequestCommandService requestCommandService, RequestQueryService requestQueryService) {
+    public RequestController(RequestCommandService requestCommandService, RequestQueryService requestQueryService, TaskServiceClient taskServiceClient) {
         this.requestCommandService = requestCommandService;
         this.requestQueryService = requestQueryService;
+        this.taskServiceClient = taskServiceClient;
+    }
+
+    @PostMapping
+    @Operation(summary = "Create a new request", description = "Create a new request")
+    public ResponseEntity<RequestResource> createRequest(@PathVariable Long taskId,
+                                                         @RequestHeader("X-Username") String username,
+                                                         @RequestHeader("Authorization") String authorizationHeader,
+                                                         @RequestBody CreateRequestResource resource) {
+        var member = this.taskServiceClient.fetchMemberByUsername(username, authorizationHeader);
+        if (member.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        var task = this.taskServiceClient.fetchTaskDetailsById(taskId);
+        if (task.isEmpty() || !task.get().memberId().equals(member.get().id())) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        var createRequestCommand = CreateRequestCommandFromResourceAssembler.toCommandFromResource(resource, taskId);
+        var requestId = requestCommandService.handle(createRequestCommand);
+
+        if(requestId.equals(0L))
+            return ResponseEntity.badRequest().build();
+
+        var getRequestByIdQuery = new GetRequestByIdQuery(requestId);
+        var optionalRequest = this.requestQueryService.handle(getRequestByIdQuery);
+        if (optionalRequest.isEmpty())
+            return ResponseEntity.badRequest().build();
+
+        var requestResource = RequestResourceFromEntityAssembler.toResourceFromEntity(optionalRequest.get(), task.get(), member.get());
+        return new ResponseEntity<>(requestResource, HttpStatus.CREATED);
     }
 
     @DeleteMapping("/{requestId}")
