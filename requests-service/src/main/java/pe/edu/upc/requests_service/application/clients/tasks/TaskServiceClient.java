@@ -9,4 +9,6 @@ public interface TaskServiceClient {
     Optional<TaskDetailsResource> fetchTaskDetailsById(Long taskId);
 
     Optional<MemberWithUserResource> fetchMemberByUsername(String username, String authorizationHeader);
+
+    Optional<MemberWithUserResource> fetchMemberByMemberId(Long memberId, String authorizationHeader);
 }

@@ -73,4 +73,31 @@ public class TaskServiceClientImpl implements TaskServiceClient{
         }
         return Optional.empty();
     }
+
+    @Override
+    public Optional<MemberWithUserResource> fetchMemberByMemberId(Long memberId, String authorizationHeader) {
+        try {
+            var request = webClient.get()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/member/details/{memberId}")
+                            .build(memberId));
+
+            if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+                request = request.header("Authorization", authorizationHeader);
+            }
+
+            MemberWithUserResource memberResource = request
+                    .retrieve()
+                    .bodyToMono(MemberWithUserResource.class)
+                    .block();
+
+            return Optional.ofNullable(memberResource);
+
+        } catch (WebClientResponseException e) {
+            if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
+                return Optional.empty();
+            }
+        }
+        return Optional.empty();
+    }
 }
