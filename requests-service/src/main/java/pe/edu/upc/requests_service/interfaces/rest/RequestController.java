@@ -66,6 +66,29 @@ public class RequestController {
         return new ResponseEntity<>(requestResource, HttpStatus.CREATED);
     }
 
+    @GetMapping
+    @Operation(summary = "Get requests from a task", description = "Get a list of requests from a task id")
+    public ResponseEntity<List<RequestResource>> getRequestsByTaskId(@PathVariable Long taskId,
+                                                                    @RequestHeader("Authorization") String authorizationHeader) {
+        var getRequestsByTaskIdQuery = new GetRequestsByTaskIdQuery(taskId);
+        var requests = this.requestQueryService.handle(getRequestsByTaskIdQuery);
+
+        var taskOpt = this.taskServiceClient.fetchTaskDetailsById(taskId);
+        if (taskOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        var memberOpt = this.taskServiceClient.fetchMemberByMemberId(taskOpt.get().memberId(), authorizationHeader);
+        if (memberOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        var requestResources = requests.stream()
+                .map(request -> RequestResourceFromEntityAssembler.toResourceFromEntity(request, taskOpt.get(), memberOpt.get()))
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(requestResources);
+    }
+
     @DeleteMapping("/{requestId}")
     @Operation(summary = "Delete a request by id", description = "Delete a request by id")
     public ResponseEntity<Void> deleteRequestById(@PathVariable Long taskId, @PathVariable Long requestId) {
