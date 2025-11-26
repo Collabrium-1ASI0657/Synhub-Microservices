@@ -8,14 +8,18 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pe.edu.upc.requests_service.application.clients.tasks.TaskServiceClient;
 import pe.edu.upc.requests_service.domain.model.commands.DeleteRequestCommand;
+import pe.edu.upc.requests_service.domain.model.commands.UpdateRequestCommand;
 import pe.edu.upc.requests_service.domain.model.queries.GetRequestByIdQuery;
 import pe.edu.upc.requests_service.domain.model.queries.GetRequestsByTaskIdQuery;
 import pe.edu.upc.requests_service.domain.services.RequestCommandService;
 import pe.edu.upc.requests_service.domain.services.RequestQueryService;
 import pe.edu.upc.requests_service.interfaces.rest.resources.CreateRequestResource;
+import pe.edu.upc.requests_service.interfaces.rest.resources.RequestDetailsResource;
 import pe.edu.upc.requests_service.interfaces.rest.resources.RequestResource;
 import pe.edu.upc.requests_service.interfaces.rest.transform.CreateRequestCommandFromResourceAssembler;
+import pe.edu.upc.requests_service.interfaces.rest.transform.RequestDetailsResourceFromEntityAssembler;
 import pe.edu.upc.requests_service.interfaces.rest.transform.RequestResourceFromEntityAssembler;
+import pe.edu.upc.requests_service.interfaces.rest.transform.UpdateRequestCommandFromResourceAssembler;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -87,6 +91,43 @@ public class RequestController {
                 .map(request -> RequestResourceFromEntityAssembler.toResourceFromEntity(request, taskOpt.get(), memberOpt.get()))
                 .collect(Collectors.toList());
         return ResponseEntity.ok(requestResources);
+    }
+
+    @GetMapping("/{requestId}")
+    @Operation(summary = "Get a request by id", description = "Get a request by id")
+    public ResponseEntity<RequestResource> getRequestById(@PathVariable Long taskId, @PathVariable Long requestId,
+                                                          @RequestHeader("Authorization") String authorizationHeader) {
+        var getRequestByIdQuery = new GetRequestByIdQuery(requestId);
+        var request = this.requestQueryService.handle(getRequestByIdQuery);
+
+        if (request.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        var taskOpt = this.taskServiceClient.fetchTaskDetailsById(taskId);
+        if (taskOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        var memberOpt = this.taskServiceClient.fetchMemberByMemberId(taskOpt.get().memberId(), authorizationHeader);
+        if (memberOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        var requestResource = RequestResourceFromEntityAssembler.toResourceFromEntity(request.get(), taskOpt.get(), memberOpt.get());
+        return ResponseEntity.ok(requestResource);
+    }
+
+    @PutMapping("/{requestId}/status/{status}")
+    @Operation(summary = "Update a request status", description = "Update the status of a request")
+    public ResponseEntity<RequestDetailsResource> updateRequestStatus(@PathVariable Long taskId, @PathVariable Long requestId, @PathVariable String status) {
+        var updateRequestCommand = new UpdateRequestCommand(requestId, status);
+        var updatedRequest = this.requestCommandService.handle(updateRequestCommand);
+
+        if (updatedRequest.isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        var requestResource = RequestDetailsResourceFromEntityAssembler.toResourceFromEntity(updatedRequest.get());
+        return ResponseEntity.ok(requestResource);
     }
 
     @DeleteMapping("/{requestId}")
