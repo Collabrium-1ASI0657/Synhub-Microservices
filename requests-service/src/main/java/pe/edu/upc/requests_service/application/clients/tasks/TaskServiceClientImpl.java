@@ -100,4 +100,31 @@ public class TaskServiceClientImpl implements TaskServiceClient{
         }
         return Optional.empty();
     }
+
+    @Override
+    public Optional<TaskDetailsResource> fetchAllTasksByGroupId(Long groupId, String authorizationHeader) {
+        try {
+            var request = webClient.get()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/tasks/group/{groupId}")
+                            .build(groupId));
+
+            if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+                request = request.header("Authorization", authorizationHeader);
+            }
+
+            TaskDetailsResource taskDetailsResource = request
+                    .retrieve()
+                    .bodyToMono(TaskDetailsResource.class)
+                    .block();
+
+            return Optional.ofNullable(taskDetailsResource);
+
+        } catch (WebClientResponseException e) {
+            if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
+                return Optional.empty();
+            }
+        }
+        return Optional.empty();
+    }
 }

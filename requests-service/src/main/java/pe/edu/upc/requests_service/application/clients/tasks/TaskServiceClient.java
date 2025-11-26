@@ -11,4 +11,6 @@ public interface TaskServiceClient {
     Optional<MemberWithUserResource> fetchMemberByUsername(String username, String authorizationHeader);
 
     Optional<MemberWithUserResource> fetchMemberByMemberId(Long memberId, String authorizationHeader);
+
+    Optional<TaskDetailsResource> fetchAllTasksByGroupId(Long groupId, String authorizationHeader);
 }
