@@ -81,6 +81,7 @@ public class GroupCommandServiceImpl implements GroupCommandService {
     }
     try {
       groupRepository.delete(group.get());
+      tasksEventPublisher.publishGroupDeleted(groupId);
     }catch (Exception e) {
       throw new IllegalArgumentException("Error while deleting group: " + e.getMessage());
     }
