@@ -2,7 +2,6 @@ package pe.edu.upc.metrics_service.metrics.application.clients.groups;
 
 import java.util.Optional;
 
-
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
