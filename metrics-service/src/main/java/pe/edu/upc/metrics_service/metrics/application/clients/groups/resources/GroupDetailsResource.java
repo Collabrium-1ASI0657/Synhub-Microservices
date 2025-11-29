@@ -1,6 +1,6 @@
 package pe.edu.upc.metrics_service.metrics.application.clients.groups.resources;
 
-public record GroupDetailsResource(Long id,
+public record GroupDetailsResource(Long leaderid,
                                    String name,
                                    String imgUrl,
                                    String description,
