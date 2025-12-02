@@ -6,5 +6,4 @@ import java.util.Optional;
 
 public interface GroupsServiceClient {
     Optional<GroupDetailsResource> fetchGroupByLeaderId(Long leaderId);
-
 }

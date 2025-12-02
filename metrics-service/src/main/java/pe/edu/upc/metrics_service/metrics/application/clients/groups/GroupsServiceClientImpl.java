@@ -1,7 +1,6 @@
 package pe.edu.upc.metrics_service.metrics.application.clients.groups;
 
 import java.util.Optional;
-
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -15,14 +14,13 @@ public class GroupsServiceClientImpl implements GroupsServiceClient {
     private final WebClient webClient;
 
     public GroupsServiceClientImpl(
-
             @Qualifier("loadBalancedWebClientBuilder") WebClient.Builder webClientBuilder
     ) {
-
         this.webClient = webClientBuilder
                 .baseUrl("http://groups-service/api/v1")
                 .build();
     }
+  
     @Override
     public Optional<GroupDetailsResource> fetchGroupByLeaderId(Long leaderId) {
         try {
@@ -35,6 +33,7 @@ public class GroupsServiceClientImpl implements GroupsServiceClient {
             GroupDetailsResource resource = request
                     .retrieve()
                     .bodyToMono(GroupDetailsResource.class)
+
                     .block();
 
             return Optional.ofNullable(resource);
@@ -44,7 +43,6 @@ public class GroupsServiceClientImpl implements GroupsServiceClient {
                 return Optional.empty();
             }
             throw e;
-
+        }
     }
-    }
-    }
+}
