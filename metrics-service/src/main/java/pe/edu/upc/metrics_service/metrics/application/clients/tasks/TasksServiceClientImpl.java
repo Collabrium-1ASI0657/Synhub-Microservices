@@ -25,17 +25,24 @@ public class TasksServiceClientImpl implements TasksServiceClient {
     }
 
     @Override
-    public List<MemberWithTasksResource> fetchMembersByGroupId(Long groupId) {
+    public List<MemberWithTasksResource> fetchMembersByGroupId(Long groupId, String authorizationHeader) {
         try {
-            return webClient.get()
+            var request = webClient.get()
                     .uri(uriBuilder -> uriBuilder
                             .path("/members")
                             .queryParam("groupId", groupId)
-                            .build())
+                            .build());
+
+            if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+                request = request.header("Authorization", authorizationHeader);
+            }
+
+            return request
                     .retrieve()
                     .bodyToFlux(MemberWithTasksResource.class)
                     .collectList()
                     .block();
+
         } catch (WebClientResponseException e) {
             if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
                 return Collections.emptyList();
@@ -45,17 +52,25 @@ public class TasksServiceClientImpl implements TasksServiceClient {
     }
 
     @Override
-    public List<TaskSummaryResource> fetchTasksByMemberId(Long memberId) {
+    public List<TaskSummaryResource> fetchTasksByMemberId(Long memberId, String authorizationHeader) {
         try {
-            return webClient.get()
+            var request = webClient.get()
                     .uri(uriBuilder -> uriBuilder
                             .path("/tasks")
                             .queryParam("memberId", memberId)
-                            .build())
+                            .build());
+
+            if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+                request = request.header("Authorization", authorizationHeader);
+            }
+
+            return request
                     .retrieve()
                     .bodyToFlux(TaskSummaryResource.class)
                     .collectList()
                     .block();
+
+
         } catch (WebClientResponseException e) {
             if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
                 return Collections.emptyList();
@@ -65,17 +80,23 @@ public class TasksServiceClientImpl implements TasksServiceClient {
     }
 
     @Override
-    public List<TaskSummaryResource> fetchTasksByGroupId(Long groupId) {
+    public List<TaskSummaryResource> fetchTasksByGroupId(Long groupId, String authorizationHeader) {
         try {
-            return webClient.get()
+            var request = webClient.get()
                     .uri(uriBuilder -> uriBuilder
                             .path("/tasks")
                             .queryParam("groupId", groupId)
-                            .build())
-                    .retrieve()
+                            .build());
+
+            if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+                request = request.header("Authorization", authorizationHeader);
+            }
+
+            return request.retrieve()
                     .bodyToFlux(TaskSummaryResource.class)
                     .collectList()
                     .block();
+
         } catch (WebClientResponseException e) {
             if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
                 return Collections.emptyList();

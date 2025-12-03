@@ -7,9 +7,11 @@ import java.util.List;
 
 public interface TasksServiceClient {
 
-    List<MemberWithTasksResource> fetchMembersByGroupId(Long groupId);
+    List<MemberWithTasksResource> fetchMembersByGroupId(Long groupId, String authorizationHeader);
 
-    List<TaskSummaryResource> fetchTasksByMemberId(Long memberId);
+    List<TaskSummaryResource> fetchTasksByMemberId(Long memberId, String authorizationHeader);
 
-    List<TaskSummaryResource> fetchTasksByGroupId(Long groupId);
+    List<TaskSummaryResource> fetchTasksByGroupId(Long groupId, String authorizationHeader);
+
+
 }

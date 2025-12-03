@@ -22,13 +22,17 @@ public class GroupsServiceClientImpl implements GroupsServiceClient {
     }
   
     @Override
-    public Optional<GroupDetailsResource> fetchGroupByLeaderId(Long leaderId) {
+    public Optional<GroupDetailsResource> fetchGroupByLeaderId(Long leaderId, String authorizationHeader) {
         try {
             var request = webClient.get()
                     .uri(uriBuilder -> uriBuilder
                             .path("/groups")
                             .queryParam("leaderId", leaderId)
                             .build());
+
+            if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+                request = request.header("Authorization", authorizationHeader);
+            }
 
             GroupDetailsResource resource = request
                     .retrieve()

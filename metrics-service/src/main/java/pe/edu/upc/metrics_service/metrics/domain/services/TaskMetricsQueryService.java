@@ -7,7 +7,7 @@ public interface TaskMetricsQueryService {
     TaskTimePassedResource handle(GetTaskTimePassedQuery query);
     AvgCompletionTimeResource handle(GetAvgCompletionTimeQuery query);
     RescheduledTasksResource handle(GetRescheduledTasksQuery query);
-    TaskDistributionResource handle(GetTaskDistributionQuery query);
+    TaskDistributionResource handle(GetTaskDistributionQuery query, String authenticationHeader);
     TaskOverviewResource handle(GetTaskOverviewQuery query);
     TaskOverviewResource handle(GetTaskOverviewForMemberQuery query);
     TaskDistributionResource handle(GetTaskDistributionForMemberQuery query);
