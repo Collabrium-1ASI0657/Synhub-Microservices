@@ -125,7 +125,7 @@ public class MetricsController {
             @RequestHeader("X-Username") String username) {
         //String username = userDetails.getUsername();
         //var leader = leaderQueryService.handle(new GetLeaderByUsernameQuery(username));
-        var leader = groupsServiceClient.fetchLeaderByAuthentication(authorizationHeader, username);
+        var leader = groupsServiceClient.fetchLeaderByAuthentication(username, authorizationHeader);
         if (leader.isEmpty()) return ResponseEntity.notFound().build();
         var query = new GetAvgCompletionTimeQuery(leader.get().id());
         var resource = taskMetricsQueryService.handle(query, authorizationHeader);
