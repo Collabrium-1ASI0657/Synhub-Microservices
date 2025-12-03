@@ -8,7 +8,6 @@ public record TaskSummaryResource(
         Boolean rescheduled,
         String createdAt,
         String updatedAt,
-        Integer rearrangedCount,
         Long timePassed,
         Integer timesRearranged
 ) {}
