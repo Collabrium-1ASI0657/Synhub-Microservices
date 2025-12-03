@@ -1,7 +1,7 @@
 package pe.edu.upc.metrics_service.metrics.domain.services;
 
-import nrg.inc.synhubbackend.metrics.domain.model.queries.*;
-import nrg.inc.synhubbackend.metrics.interfaces.rest.resources.*;
+import pe.edu.upc.metrics_service.metrics.domain.model.queries.*;
+import pe.edu.upc.metrics_service.metrics.interfaces.rest.resources.*;
 
 public interface TaskMetricsQueryService {
     TaskTimePassedResource handle(GetTaskTimePassedQuery query);

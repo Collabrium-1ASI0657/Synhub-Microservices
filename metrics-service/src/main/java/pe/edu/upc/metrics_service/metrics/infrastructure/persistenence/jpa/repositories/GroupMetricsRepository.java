@@ -1,6 +1,6 @@
 package pe.edu.upc.metrics_service.metrics.infrastructure.persistenence.jpa.repositories;
 
-import nrg.inc.synhubbackend.metrics.domain.model.aggregates.GroupMetrics;
+import pe.edu.upc.metrics_service.metrics.domain.model.aggregates.GroupMetrics;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
