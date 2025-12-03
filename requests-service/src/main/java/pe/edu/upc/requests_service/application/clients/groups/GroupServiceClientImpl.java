@@ -23,7 +23,7 @@ public class GroupServiceClientImpl implements GroupServiceClient {
         try {
             var request = webClient.get()
                     .uri(uriBuilder -> uriBuilder
-                            .path("/leader/group")
+                            .path("/leader/details")
                             .build());
 
             if (username != null && !username.isBlank()) {
@@ -33,6 +33,8 @@ public class GroupServiceClientImpl implements GroupServiceClient {
             if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
                 request = request.header("Authorization", authorizationHeader);
             }
+
+
 
             LeaderResource leaderResource = request
                     .retrieve()
@@ -50,8 +52,9 @@ public class GroupServiceClientImpl implements GroupServiceClient {
         try {
             var request = webClient.get()
                     .uri(uriBuilder -> uriBuilder
-                            .path("/group/leader")
-                            .build(leaderId));
+                            .path("/groups")
+                            .queryParam("leaderId", leaderId)
+                            .build());
 
             if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
                 request = request.header("Authorization", authorizationHeader);
