@@ -1,6 +1,9 @@
 package pe.edu.upc.metrics_service.metrics.application.internal.queryservice;
 
 import org.springframework.stereotype.Service;
+import pe.edu.upc.metrics_service.metrics.application.clients.groups.GroupsServiceClient;
+import pe.edu.upc.metrics_service.metrics.application.clients.iam.IamServiceClient;
+import pe.edu.upc.metrics_service.metrics.application.clients.tasks.TasksServiceClient;
 import pe.edu.upc.metrics_service.metrics.domain.model.queries.*;
 import pe.edu.upc.metrics_service.metrics.domain.services.TaskMetricsQueryService;
 import pe.edu.upc.metrics_service.metrics.interfaces.rest.resources.*;
@@ -14,14 +17,14 @@ import java.util.stream.Collectors;
 @Service
 public class TaskMetricsQueryServiceImpl implements TaskMetricsQueryService {
 
-    private final TaskRepository taskRepository;
-    private final UserRepository userRepository;
-    private final GroupQueryService groupQueryService;
+    private final TasksServiceClient tasksServiceClient;
+    private final IamServiceClient iamServiceClient;
+    private final GroupsServiceClient groupsServiceClient;
 
-    public TaskMetricsQueryServiceImpl(TaskRepository taskRepository, UserRepository userRepository, GroupQueryService groupQueryService) {
-        this.taskRepository = taskRepository;
-        this.userRepository = userRepository;
-        this.groupQueryService = groupQueryService;
+    public TaskMetricsQueryServiceImpl(TasksServiceClient tasksServiceClient, IamServiceClient iamServiceClient, GroupsServiceClient groupsServiceClient) {
+        this.tasksServiceClient = tasksServiceClient;
+        this.iamServiceClient = iamServiceClient;
+        this.groupsServiceClient = groupsServiceClient;
     }
 
     @Override
