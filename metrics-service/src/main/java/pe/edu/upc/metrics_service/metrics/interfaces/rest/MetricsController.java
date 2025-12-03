@@ -44,7 +44,7 @@ public class MetricsController {
             @RequestHeader("Authorization") String authorizationHeader,
             @RequestHeader("X-Username") String username) {
         //var leader = leaderQueryService.handle(new GetLeaderByUsernameQuery(username));
-        var leader = groupsServiceClient.fetchLeaderByAuthentication(authorizationHeader, username);
+        var leader = groupsServiceClient.fetchLeaderByAuthentication(username, authorizationHeader);
         if (leader.isEmpty()) return Optional.empty();
         var group = groupsServiceClient.fetchGroupByLeaderId(leader.get().id(), authorizationHeader);
         return group.map(GroupDetailsResource::id);
