@@ -7,5 +7,6 @@ public record TaskSummaryResource(
         String status,
         Boolean rescheduled,
         String createdAt,
-        String completedAt
+        String updatedAt,
+        Integer rearrangedCount
 ) {}

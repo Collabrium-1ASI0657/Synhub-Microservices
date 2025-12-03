@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import pe.edu.upc.metrics_service.metrics.application.clients.tasks.resources.MemberWithTasksResource;
+import pe.edu.upc.metrics_service.metrics.application.clients.tasks.resources.TaskSummaryResource;
 
 import java.util.Collections;
 import java.util.List;
@@ -35,7 +36,46 @@ public class TasksServiceClientImpl implements TasksServiceClient {
                     .bodyToFlux(MemberWithTasksResource.class)
                     .collectList()
                     .block();
+        } catch (WebClientResponseException e) {
+            if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
+                return Collections.emptyList();
+            }
+            throw e;
+        }
+    }
 
+    @Override
+    public List<TaskSummaryResource> fetchTasksByMemberId(Long memberId) {
+        try {
+            return webClient.get()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/tasks")
+                            .queryParam("memberId", memberId)
+                            .build())
+                    .retrieve()
+                    .bodyToFlux(TaskSummaryResource.class)
+                    .collectList()
+                    .block();
+        } catch (WebClientResponseException e) {
+            if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
+                return Collections.emptyList();
+            }
+            throw e;
+        }
+    }
+
+    @Override
+    public List<TaskSummaryResource> fetchTasksByGroupId(Long groupId) {
+        try {
+            return webClient.get()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/tasks")
+                            .queryParam("groupId", groupId)
+                            .build())
+                    .retrieve()
+                    .bodyToFlux(TaskSummaryResource.class)
+                    .collectList()
+                    .block();
         } catch (WebClientResponseException e) {
             if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
                 return Collections.emptyList();
