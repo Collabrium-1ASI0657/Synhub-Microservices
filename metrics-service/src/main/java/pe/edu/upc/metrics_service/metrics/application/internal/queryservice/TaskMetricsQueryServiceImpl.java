@@ -1,16 +1,9 @@
 package pe.edu.upc.metrics_service.metrics.application.internal.queryservice;
 
-import nrg.inc.synhubbackend.groups.domain.model.queries.GetGroupByLeaderIdQuery;
-import nrg.inc.synhubbackend.groups.domain.services.GroupQueryService;
-import nrg.inc.synhubbackend.iam.domain.model.aggregates.User;
-import nrg.inc.synhubbackend.iam.infrastructure.persistence.jpa.repositories.UserRepository;
-import nrg.inc.synhubbackend.metrics.domain.model.queries.*;
-import nrg.inc.synhubbackend.metrics.domain.model.services.TaskMetricsQueryService;
-import nrg.inc.synhubbackend.metrics.interfaces.rest.resources.*;
-import nrg.inc.synhubbackend.tasks.domain.model.aggregates.Task;
-import nrg.inc.synhubbackend.tasks.domain.model.valueobjects.TaskStatus;
-import nrg.inc.synhubbackend.tasks.infrastructure.persistence.jpa.repositories.TaskRepository;
 import org.springframework.stereotype.Service;
+import pe.edu.upc.metrics_service.metrics.domain.model.queries.*;
+import pe.edu.upc.metrics_service.metrics.domain.services.TaskMetricsQueryService;
+import pe.edu.upc.metrics_service.metrics.interfaces.rest.resources.*;
 
 import java.util.HashMap;
 import java.util.List;
