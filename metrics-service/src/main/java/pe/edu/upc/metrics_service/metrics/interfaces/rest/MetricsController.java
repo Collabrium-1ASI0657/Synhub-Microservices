@@ -2,17 +2,20 @@ package pe.edu.upc.metrics_service.metrics.interfaces.rest;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import nrg.inc.synhubbackend.groups.domain.model.queries.GetGroupByLeaderIdQuery;
-import nrg.inc.synhubbackend.groups.domain.model.queries.GetLeaderByUsernameQuery;
-import nrg.inc.synhubbackend.groups.domain.services.GroupQueryService;
-import nrg.inc.synhubbackend.groups.domain.services.LeaderQueryService;
-import nrg.inc.synhubbackend.metrics.domain.model.queries.*;
-import nrg.inc.synhubbackend.metrics.domain.model.services.TaskMetricsQueryService;
-import nrg.inc.synhubbackend.metrics.interfaces.rest.resources.*;
-import nrg.inc.synhubbackend.shared.domain.model.aggregates.AuditableAbstractAggregateRoot;
-import org.springframework.http.ResponseEntity;
+//import nrg.inc.synhubbackend.groups.domain.model.queries.GetGroupByLeaderIdQuery;
+//import nrg.inc.synhubbackend.groups.domain.model.queries.GetLeaderByUsernameQuery;
+//import nrg.inc.synhubbackend.groups.domain.services.GroupQueryService;
+//import nrg.inc.synhubbackend.groups.domain.services.LeaderQueryService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
+import pe.edu.upc.metrics_service.metrics.application.clients.groups.GroupsServiceClient;
+import pe.edu.upc.metrics_service.metrics.application.clients.groups.resources.GroupDetailsResource;
+import pe.edu.upc.metrics_service.metrics.domain.model.queries.*;
+import pe.edu.upc.metrics_service.metrics.domain.services.TaskMetricsQueryService;
+import pe.edu.upc.metrics_service.metrics.interfaces.rest.resources.*;
+import pe.edu.upc.metrics_service.shared.domain.model.aggregates.AuditableAbstractAggregateRoot;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
 
 import java.util.Optional;
 
@@ -22,22 +25,32 @@ import java.util.Optional;
 public class MetricsController {
 
     private final TaskMetricsQueryService taskMetricsQueryService;
-    private final LeaderQueryService leaderQueryService;
-    private final GroupQueryService groupQueryService;
+    //private final LeaderQueryService leaderQueryService;
+    //private final GroupQueryService groupQueryService;
+    private final GroupsServiceClient groupsServiceClient;
 
-    public MetricsController(TaskMetricsQueryService taskMetricsQueryService, LeaderQueryService leaderQueryService, GroupQueryService groupQueryService) {
+    public MetricsController(
+            TaskMetricsQueryService taskMetricsQueryService,
+            //LeaderQueryService leaderQueryService,
+            //GroupQueryService groupQueryService,
+            GroupsServiceClient groupsServiceClient) {
         this.taskMetricsQueryService = taskMetricsQueryService;
-        this.leaderQueryService = leaderQueryService;
-        this.groupQueryService = groupQueryService;
+        this.groupsServiceClient = groupsServiceClient;
+        //this.leaderQueryService = leaderQueryService;
+        //this.groupQueryService = groupQueryService;
     }
 
-    private Optional<Long> getGroupIdFromUser(@AuthenticationPrincipal UserDetails userDetails) {
-        String username = userDetails.getUsername();
-        var leader = leaderQueryService.handle(new GetLeaderByUsernameQuery(username));
+    private Optional<Long> getGroupIdFromUser(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestHeader("X-Username") String username) {
+        //var leader = leaderQueryService.handle(new GetLeaderByUsernameQuery(username));
+        var leader = groupsServiceClient.fetchLeaderByAuthentication(username, authorizationHeader);
         if (leader.isEmpty()) return Optional.empty();
-        var group = groupQueryService.handle(new GetGroupByLeaderIdQuery(leader.get().getId()));
-        return group.map(AuditableAbstractAggregateRoot::getId);
+        var group = groupsServiceClient.fetchGroupByLeaderId(leader.get().id(), authorizationHeader);
+        return group.map(GroupDetailsResource::id);
     }
+
+    // Endpoints for task metrics
 
     @GetMapping("/task/member/{memberId}/time-passed")
     @Operation(
@@ -45,9 +58,11 @@ public class MetricsController {
         description = "Returns the time passed in milliseconds for a completed task assigned to the given member.",
         tags = {"Metrics"}
     )
-    public ResponseEntity<TaskTimePassedResource> getAverageTaskTimePassed(@PathVariable Long memberId) {
+    public ResponseEntity<TaskTimePassedResource> getAverageTaskTimePassed(
+            @PathVariable Long memberId,
+            @RequestHeader("Authorization") String authorizationHeader) {
         var query = new GetTaskTimePassedQuery(memberId);
-        var resource = taskMetricsQueryService.handle(query);
+        var resource = taskMetricsQueryService.handle(query, authorizationHeader);
         return ResponseEntity.ok(resource);
     }
 
@@ -57,11 +72,13 @@ public class MetricsController {
         description = "Returns a summary of task statuses for the authenticated leader's group.",
         tags = {"Metrics"}
     )
-    public ResponseEntity<TaskOverviewResource> getTaskOverview(@AuthenticationPrincipal UserDetails userDetails) {
-        var groupIdOpt = getGroupIdFromUser(userDetails);
+    public ResponseEntity<TaskOverviewResource> getTaskOverview(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestHeader("X-Username") String username) {
+        var groupIdOpt = getGroupIdFromUser(authorizationHeader, username);
         if (groupIdOpt.isEmpty()) return ResponseEntity.notFound().build();
         var query = new GetTaskOverviewQuery(groupIdOpt.get());
-        var resource = taskMetricsQueryService.handle(query);
+        var resource = taskMetricsQueryService.handle(query, authorizationHeader);
         return ResponseEntity.ok(resource);
     }
 
@@ -71,11 +88,13 @@ public class MetricsController {
         description = "Returns the number of tasks assigned to each member in the authenticated leader's group.",
         tags = {"Metrics"}
     )
-    public ResponseEntity<TaskDistributionResource> getTaskDistribution(@AuthenticationPrincipal UserDetails userDetails) {
-        var groupIdOpt = getGroupIdFromUser(userDetails);
+    public ResponseEntity<TaskDistributionResource> getTaskDistribution(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestHeader("X-Username") String username) {
+        var groupIdOpt = getGroupIdFromUser(authorizationHeader, username);
         if (groupIdOpt.isEmpty()) return ResponseEntity.notFound().build();
         var query = new GetTaskDistributionQuery(groupIdOpt.get());
-        var resource = taskMetricsQueryService.handle(query);
+        var resource = taskMetricsQueryService.handle(query, authorizationHeader);
         return ResponseEntity.ok(resource);
     }
 
@@ -85,11 +104,13 @@ public class MetricsController {
         description = "Returns the count of rescheduled vs non-rescheduled tasks for the authenticated leader's group, and the memberIds of those with rescheduled tasks.",
         tags = {"Metrics"}
     )
-    public ResponseEntity<RescheduledTasksResource> getRescheduledTasks(@AuthenticationPrincipal UserDetails userDetails) {
-        var groupIdOpt = getGroupIdFromUser(userDetails);
+    public ResponseEntity<RescheduledTasksResource> getRescheduledTasks(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestHeader("X-Username") String username) {
+        var groupIdOpt = getGroupIdFromUser(authorizationHeader, username);
         if (groupIdOpt.isEmpty()) return ResponseEntity.notFound().build();
         var query = new GetRescheduledTasksQuery(groupIdOpt.get());
-        var resource = taskMetricsQueryService.handle(query);
+        var resource = taskMetricsQueryService.handle(query, authorizationHeader);
         return ResponseEntity.ok(resource);
     }
 
@@ -99,12 +120,15 @@ public class MetricsController {
         description = "Returns the average time (in days) it takes to complete tasks in the authenticated leader's group.",
         tags = {"Metrics"}
     )
-    public ResponseEntity<AvgCompletionTimeResource> getAvgCompletionTime(@AuthenticationPrincipal UserDetails userDetails) {
-        String username = userDetails.getUsername();
-        var leader = leaderQueryService.handle(new GetLeaderByUsernameQuery(username));
+    public ResponseEntity<AvgCompletionTimeResource> getAvgCompletionTime(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestHeader("X-Username") String username) {
+        //String username = userDetails.getUsername();
+        //var leader = leaderQueryService.handle(new GetLeaderByUsernameQuery(username));
+        var leader = groupsServiceClient.fetchLeaderByAuthentication(username, authorizationHeader);
         if (leader.isEmpty()) return ResponseEntity.notFound().build();
-        var query = new GetAvgCompletionTimeQuery(leader.get().getId());
-        var resource = taskMetricsQueryService.handle(query);
+        var query = new GetAvgCompletionTimeQuery(leader.get().id());
+        var resource = taskMetricsQueryService.handle(query, authorizationHeader);
         return ResponseEntity.ok(resource);
     }
 
@@ -114,9 +138,11 @@ public class MetricsController {
         description = "Returns a summary of task statuses for the given member.",
         tags = {"Metrics"}
     )
-    public ResponseEntity<TaskOverviewResource> getTaskOverviewForMember(@PathVariable Long memberId) {
+    public ResponseEntity<TaskOverviewResource> getTaskOverviewForMember(
+            @PathVariable Long memberId,
+            @RequestHeader("Authorization") String authorizationHeader) {
         var query = new GetTaskOverviewForMemberQuery(memberId);
-        var resource = taskMetricsQueryService.handle(query);
+        var resource = taskMetricsQueryService.handle(query, authorizationHeader);
         return ResponseEntity.ok(resource);
     }
 
@@ -126,9 +152,11 @@ public class MetricsController {
         description = "Returns the number of tasks assigned to the given member.",
         tags = {"Metrics"}
     )
-    public ResponseEntity<TaskDistributionResource> getTaskDistributionForMember(@PathVariable Long memberId) {
+    public ResponseEntity<TaskDistributionResource> getTaskDistributionForMember(
+            @PathVariable Long memberId,
+            @RequestHeader("Authorization") String authorizationHeader) {
         var query = new GetTaskDistributionForMemberQuery(memberId);
-        var resource = taskMetricsQueryService.handle(query);
+        var resource = taskMetricsQueryService.handle(query, authorizationHeader);
         return ResponseEntity.ok(resource);
     }
 
@@ -138,9 +166,11 @@ public class MetricsController {
         description = "Returns the count of rescheduled vs non-rescheduled tasks for the given member.",
         tags = {"Metrics"}
     )
-    public ResponseEntity<RescheduledTasksResource> getRescheduledTasksForMember(@PathVariable Long memberId) {
+    public ResponseEntity<RescheduledTasksResource> getRescheduledTasksForMember(
+            @PathVariable Long memberId,
+            @RequestHeader("Authorization") String authorizationHeader) {
         var query = new GetRescheduledTasksForMemberQuery(memberId);
-        var resource = taskMetricsQueryService.handle(query);
+        var resource = taskMetricsQueryService.handle(query, authorizationHeader);
         return ResponseEntity.ok(resource);
     }
 
@@ -150,9 +180,11 @@ public class MetricsController {
         description = "Returns the average time (in days) it takes for the given member to complete tasks.",
         tags = {"Metrics"}
     )
-    public ResponseEntity<AvgCompletionTimeResource> getAvgCompletionTimeForMember(@PathVariable Long memberId) {
+    public ResponseEntity<AvgCompletionTimeResource> getAvgCompletionTimeForMember(
+            @PathVariable Long memberId,
+            @RequestHeader("Authorization") String authorizationHeader) {
         var query = new GetAvgCompletionTimeForMemberQuery(memberId);
-        var resource = taskMetricsQueryService.handle(query);
+        var resource = taskMetricsQueryService.handle(query, authorizationHeader);
         return ResponseEntity.ok(resource);
     }
 }

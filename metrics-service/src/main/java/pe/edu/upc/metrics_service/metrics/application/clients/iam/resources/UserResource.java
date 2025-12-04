@@ -1,6 +1,6 @@
 package pe.edu.upc.metrics_service.metrics.application.clients.iam.resources;
 
-import pe.edu.upc.tasks_service.tasks.application.clients.iam.resources.MemberFromUserResource;
+import pe.edu.upc.metrics_service.metrics.application.clients.iam.resources.MemberFromUserResource;
 
 import java.util.List;
 

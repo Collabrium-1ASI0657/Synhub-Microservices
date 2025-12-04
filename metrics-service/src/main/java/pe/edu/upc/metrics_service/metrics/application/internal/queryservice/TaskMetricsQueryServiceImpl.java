@@ -4,6 +4,7 @@ import org.springframework.stereotype.Service;
 import pe.edu.upc.metrics_service.metrics.application.clients.groups.GroupsServiceClient;
 import pe.edu.upc.metrics_service.metrics.application.clients.iam.IamServiceClient;
 import pe.edu.upc.metrics_service.metrics.application.clients.tasks.TasksServiceClient;
+import pe.edu.upc.metrics_service.metrics.application.clients.tasks.resources.TaskSummaryResource;
 import pe.edu.upc.metrics_service.metrics.domain.model.queries.*;
 import pe.edu.upc.metrics_service.metrics.domain.services.TaskMetricsQueryService;
 import pe.edu.upc.metrics_service.metrics.interfaces.rest.resources.*;
@@ -28,18 +29,22 @@ public class TaskMetricsQueryServiceImpl implements TaskMetricsQueryService {
     }
 
     @Override
-    public TaskTimePassedResource handle(GetTaskTimePassedQuery query) {
-        List<Task> memberTasks = taskRepository.findByMember_Id(query.memberId());
+    public TaskTimePassedResource handle(GetTaskTimePassedQuery query, String authorizationHeader) {
+        //List<Task> memberTasks = taskRepository.findByMember_Id(query.memberId());
+        List<TaskSummaryResource> memberTasks = tasksServiceClient.fetchTasksByMemberId(query.memberId(), authorizationHeader);
 
         double avgTimePassed = memberTasks.isEmpty() ? 0 :
-            memberTasks.stream().mapToLong(Task::getTimePassed).average().orElse(0);
+            memberTasks.stream().mapToLong(TaskSummaryResource::timePassed)
+                    .average().orElse(0);
 
         return new TaskTimePassedResource(query.memberId(), (long) avgTimePassed);
     }
 
     @Override
-    public AvgCompletionTimeResource handle(GetAvgCompletionTimeQuery query) {
-        var groupOpt = groupQueryService.handle(new GetGroupByLeaderIdQuery(query.leaderId()));
+    public AvgCompletionTimeResource handle(GetAvgCompletionTimeQuery query, String authorizationHeader) {
+        //var groupOpt = groupQueryService.handle(new GetGroupByLeaderIdQuery(query.leaderId()));
+        var groupOpt = groupsServiceClient.fetchGroupByLeaderId(query.leaderId(), authorizationHeader);
+
         if (groupOpt.isEmpty()) {
             return new AvgCompletionTimeResource(
                     "AVG_COMPLETION_TIME",
@@ -47,16 +52,18 @@ public class TaskMetricsQueryServiceImpl implements TaskMetricsQueryService {
                     Map.of("completedTasks", 0)
             );
         }
-        Long groupId = groupOpt.get().getId();
+        Long groupId = groupOpt.get().id();
 
-        List<Task> groupTasks = taskRepository.findByGroup_Id(groupId);
+        List<TaskSummaryResource> groupTasks = tasksServiceClient.fetchTasksByGroupId(groupId,authorizationHeader);
 
-        List<Task> completedTasks = groupTasks.stream()
-                .filter(task -> task.getStatus() == TaskStatus.DONE)
+        List<TaskSummaryResource> completedTasks = groupTasks.stream()
+                .filter(task -> "DONE".equals(task.status()))
+                //.filter(task -> task.getStatus() == TaskStatus.DONE)
                 .collect(Collectors.toList());
 
         double avg = completedTasks.stream()
-                .mapToLong(Task::getTimePassed)
+                //.mapToLong(Task::getTimePassed)
+                .mapToLong(TaskSummaryResource::timePassed)
                 .average()
                 .orElse(0);
 
@@ -68,11 +75,13 @@ public class TaskMetricsQueryServiceImpl implements TaskMetricsQueryService {
     }
 
     @Override
-    public RescheduledTasksResource handle(GetRescheduledTasksQuery query) {
-        List<Task> groupTasks = taskRepository.findByGroup_Id(query.groupId());
+    public RescheduledTasksResource handle(GetRescheduledTasksQuery query, String authorizationHeader) {
+        //List<Task> groupTasks = taskRepository.findByGroup_Id(query.groupId());
+        List<TaskSummaryResource> groupTasks = tasksServiceClient.fetchTasksByGroupId(query.groupId(), authorizationHeader);
+
 
         long totalRescheduledTimes = groupTasks.stream()
-                .mapToLong(Task::getTimesRearranged)
+                .mapToLong(TaskSummaryResource::timesRearranged)
                 .sum();
 
         Map<String, Integer> details = Map.of(
@@ -81,8 +90,9 @@ public class TaskMetricsQueryServiceImpl implements TaskMetricsQueryService {
         );
 
         List<Long> rescheduledMemberIds = groupTasks.stream()
-                .filter(task -> task.getTimesRearranged() > 0 && task.getMember() != null)
-                .map(task -> task.getMember().getId())
+                .filter(task -> task.timesRearranged() > 0
+                        && task.memberId() != null)
+                .map(TaskSummaryResource::memberId)
                 .distinct()
                 .collect(Collectors.toList());
 
@@ -90,23 +100,29 @@ public class TaskMetricsQueryServiceImpl implements TaskMetricsQueryService {
     }
 
     @Override
-    public TaskDistributionResource handle(GetTaskDistributionQuery query) {
-        List<Task> groupTasks = taskRepository.findByGroup_Id(query.groupId());
+    public TaskDistributionResource handle(GetTaskDistributionQuery query, String authorizationHeader) {
+        //List<Task> groupTasks = taskRepository.findByGroup_Id(query.groupId());
 
-        List<User> users = userRepository.findAll();
+        List<TaskSummaryResource> groupTasks = tasksServiceClient.fetchTasksByGroupId(query.groupId(), authorizationHeader);
 
-        Map<Long, List<Task>> tasksByMemberId = groupTasks.stream()
-                .filter(task -> task.getMember() != null)
-                .collect(Collectors.groupingBy(task -> task.getMember().getId()));
+        // Obtiene tareas por id de miembro
+        Map<Long, List<TaskSummaryResource>> tasksByMemberId = groupTasks.stream()
+                .filter(task -> task.memberId() != null)
+                .collect(Collectors.groupingBy(TaskSummaryResource::memberId));
 
+        // Construye el mapa de detalles
         Map<String, MemberTaskInfo> details = new HashMap<>();
-        for (Map.Entry<Long, List<Task>> entry : tasksByMemberId.entrySet()) {
+
+        // Rellena los detalles con nombre y conteo de tareas
+        for (Map.Entry<Long, List<TaskSummaryResource>> entry : tasksByMemberId.entrySet()) {
             Long memberId = entry.getKey();
             int taskCount = entry.getValue().size();
-            Optional<User> userOpt = users.stream()
-                    .filter(u -> u.getMember() != null && u.getMember().getId().equals(memberId))
-                    .findFirst();
-            String memberName = userOpt.map(u -> u.getName() + " " + u.getSurname()).orElse("Desconocido");
+            var member = iamServiceClient.fetchUserByMemberId(memberId, authorizationHeader);
+            String memberName = "Desconocido";
+            if (member.isPresent()) {
+                memberName = member.get().name() + " " + member.get().surname();
+            }
+
             details.put(memberId.toString(), new MemberTaskInfo(memberName, taskCount));
         }
 
@@ -114,11 +130,11 @@ public class TaskMetricsQueryServiceImpl implements TaskMetricsQueryService {
     }
 
     @Override
-    public TaskOverviewResource handle(GetTaskOverviewQuery query) {
-        List<Task> groupTasks = taskRepository.findByGroup_Id(query.groupId());
+    public TaskOverviewResource handle(GetTaskOverviewQuery query, String authorizationHeader) {
+        List<TaskSummaryResource> groupTasks = tasksServiceClient.fetchTasksByGroupId(query.groupId(), authorizationHeader);
 
         Map<String, Long> overview = groupTasks.stream()
-                .collect(Collectors.groupingBy(task -> task.getStatus().name(), Collectors.counting()));
+                .collect(Collectors.groupingBy(TaskSummaryResource::status, Collectors.counting()));
 
         Map<String, Integer> converted = overview.entrySet().stream()
                 .collect(Collectors.toMap(
@@ -130,10 +146,10 @@ public class TaskMetricsQueryServiceImpl implements TaskMetricsQueryService {
     }
 
     @Override
-    public TaskOverviewResource handle(GetTaskOverviewForMemberQuery query) {
-        List<Task> memberTasks = taskRepository.findByMember_Id(query.memberId());
+    public TaskOverviewResource handle(GetTaskOverviewForMemberQuery query, String authorizationHeader) {
+        List<TaskSummaryResource> memberTasks = tasksServiceClient.fetchTasksByMemberId(query.memberId(), authorizationHeader);
         Map<String, Long> overview = memberTasks.stream()
-                .collect(Collectors.groupingBy(task -> task.getStatus().name(), Collectors.counting()));
+                .collect(Collectors.groupingBy(TaskSummaryResource::status, Collectors.counting()));
         Map<String, Integer> converted = overview.entrySet().stream()
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
@@ -143,12 +159,15 @@ public class TaskMetricsQueryServiceImpl implements TaskMetricsQueryService {
     }
 
     @Override
-    public TaskDistributionResource handle(GetTaskDistributionForMemberQuery query) {
-        List<Task> memberTasks = taskRepository.findByMember_Id(query.memberId());
-        Optional<User> userOpt = userRepository.findAll().stream()
-                .filter(u -> u.getMember() != null && u.getMember().getId().equals(query.memberId()))
-                .findFirst();
-        String memberName = userOpt.map(u -> u.getName() + " " + u.getSurname()).orElse("Desconocido");
+    public TaskDistributionResource handle(GetTaskDistributionForMemberQuery query, String authorizationHeader) {
+        List<TaskSummaryResource> memberTasks = tasksServiceClient.fetchTasksByMemberId(query.memberId(), authorizationHeader);
+
+        String memberName = "Desconocido";
+        var userMember = iamServiceClient.fetchUserByMemberId(query.memberId(), authorizationHeader);
+        if (userMember.isPresent()) {
+            memberName = userMember.get().name() + " " + userMember.get().surname();
+        }
+
         Map<String, MemberTaskInfo> details = Map.of(
                 query.memberId().toString(), new MemberTaskInfo(memberName, memberTasks.size())
         );
@@ -156,10 +175,10 @@ public class TaskMetricsQueryServiceImpl implements TaskMetricsQueryService {
     }
 
     @Override
-    public RescheduledTasksResource handle(GetRescheduledTasksForMemberQuery query) {
-        List<Task> memberTasks = taskRepository.findByMember_Id(query.memberId());
+    public RescheduledTasksResource handle(GetRescheduledTasksForMemberQuery query, String authorizationHeader) {
+        List<TaskSummaryResource> memberTasks = tasksServiceClient.fetchTasksByMemberId(query.memberId(), authorizationHeader);
         long totalRescheduledTimes = memberTasks.stream()
-                .mapToLong(Task::getTimesRearranged)
+                .mapToLong(TaskSummaryResource::timesRearranged)
                 .sum();
         Map<String, Integer> details = Map.of(
                 "total", memberTasks.size(),
@@ -170,13 +189,14 @@ public class TaskMetricsQueryServiceImpl implements TaskMetricsQueryService {
     }
 
     @Override
-    public AvgCompletionTimeResource handle(GetAvgCompletionTimeForMemberQuery query) {
-        List<Task> memberTasks = taskRepository.findByMember_Id(query.memberId());
-        List<Task> completedTasks = memberTasks.stream()
-                .filter(task -> task.getStatus() == TaskStatus.DONE) // Cambiado a DONE
+    public AvgCompletionTimeResource handle(GetAvgCompletionTimeForMemberQuery query, String authorizationHeader) {
+        List<TaskSummaryResource> memberTasks = tasksServiceClient.fetchTasksByMemberId(query.memberId(), authorizationHeader);
+
+        List<TaskSummaryResource> completedTasks = memberTasks.stream()
+                .filter(task -> "DONE".equals(task.status())) // Cambiado a DONE
                 .collect(Collectors.toList());
         double avg = completedTasks.stream()
-                .mapToLong(Task::getTimePassed)
+                .mapToLong(TaskSummaryResource::timePassed)
                 .average()
                 .orElse(0);
         return new AvgCompletionTimeResource(
