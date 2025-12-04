@@ -1,0 +1,12 @@
+package pe.edu.upc.metrics_service.metrics.application.clients.groups.resources;
+
+public record GroupDetailsResource(
+        Long id,
+        Long leaderId,
+        String name,
+        String imgUrl,
+        String description,
+        String code,
+        Integer memberCount) {
+}
+
