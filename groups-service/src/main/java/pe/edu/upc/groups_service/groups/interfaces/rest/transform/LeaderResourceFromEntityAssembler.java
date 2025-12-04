@@ -9,6 +9,7 @@ public class LeaderResourceFromEntityAssembler {
     var user = entity.user();
 
     return new LeaderResource(
+        leader.getId(),
         user.username(),
         user.name(),
         user.surname(),
