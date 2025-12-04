@@ -1,0 +1,130 @@
+package pe.edu.upc.requests_service.application.clients.tasks;
+
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
+import pe.edu.upc.requests_service.application.clients.tasks.resources.MemberWithUserResource;
+import pe.edu.upc.requests_service.application.clients.tasks.resources.TaskDetailsResource;
+
+import java.util.Optional;
+
+@Service
+public class TaskServiceClientImpl implements TaskServiceClient{
+    private final WebClient webClient;
+
+    public TaskServiceClientImpl(@Qualifier("loadBalancedWebClientBuilder") WebClient.Builder webClient) {
+        this.webClient = webClient
+                .baseUrl("http://tasks-service/api/v1")
+                .build();
+    }
+
+    @Override
+    public Optional<TaskDetailsResource> fetchTaskDetailsById(Long taskId) {
+        try {
+            var request = webClient.get()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/tasks/details/{taskId}")
+                            .build(taskId));
+
+            TaskDetailsResource taskDetailsResource = request
+                    .retrieve()
+                    .bodyToMono(TaskDetailsResource.class)
+                    .block();
+
+            return Optional.ofNullable(taskDetailsResource);
+        } catch (WebClientResponseException e) {
+            if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
+                return Optional.empty();
+            }
+        }
+        return Optional.empty();
+    }
+
+    @Override
+    public Optional<MemberWithUserResource> fetchMemberByUsername(String username, String authorizationHeader) {
+        try {
+            var request = webClient.get()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/member/details")
+                            .build());
+
+            if (username != null && !username.isBlank()) {
+                request = request.header("X-Username", username);
+            }
+
+            if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+                request = request.header("Authorization", authorizationHeader);
+            }
+
+            MemberWithUserResource memberWithUserResource = request
+                    .retrieve()
+                    .bodyToMono(MemberWithUserResource.class)
+                    .block();
+
+            return Optional.ofNullable(memberWithUserResource);
+
+
+        } catch (WebClientResponseException e) {
+            if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
+                return Optional.empty();
+            }
+        }
+        return Optional.empty();
+    }
+
+    @Override
+    public Optional<MemberWithUserResource> fetchMemberByMemberId(Long memberId, String authorizationHeader) {
+        try {
+            var request = webClient.get()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/member/details/{memberId}")
+                            .build(memberId));
+
+            if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+                request = request.header("Authorization", authorizationHeader);
+            }
+
+            MemberWithUserResource memberResource = request
+                    .retrieve()
+                    .bodyToMono(MemberWithUserResource.class)
+                    .block();
+
+            return Optional.ofNullable(memberResource);
+
+        } catch (WebClientResponseException e) {
+            if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
+                return Optional.empty();
+            }
+        }
+        return Optional.empty();
+    }
+
+    @Override
+    public Optional<TaskDetailsResource> fetchAllTasksByGroupId(Long groupId, String authorizationHeader) {
+        try {
+            var request = webClient.get()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/tasks/group/{groupId}")
+                            .build(groupId));
+
+            if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+                request = request.header("Authorization", authorizationHeader);
+            }
+
+            TaskDetailsResource taskDetailsResource = request
+                    .retrieve()
+                    .bodyToMono(TaskDetailsResource.class)
+                    .block();
+
+            return Optional.ofNullable(taskDetailsResource);
+
+        } catch (WebClientResponseException e) {
+            if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
+                return Optional.empty();
+            }
+        }
+        return Optional.empty();
+    }
+}
