@@ -7,6 +7,6 @@ public record TaskDetailsResource(Long id,
                                   String createdAt,
                                   String updatedAt,
                                   String status,
-                                  Long memberId,
+                                  MemberResource member,
                                   Long groupId) {
 }
