@@ -8,14 +8,13 @@ import pe.edu.upc.requests_service.interfaces.rest.resources.RequestResource;
 public class RequestResourceFromEntityAssembler {
     public static RequestResource toResourceFromEntity(
             Request entity,
-            TaskDetailsResource taskDetailsResource,
-            MemberWithUserResource memberWithUserResource) {
+            TaskDetailsResource taskDetailsResource) {
         return new RequestResource(
                 entity.getId(),
                 entity.getDescription(),
                 entity.getRequestType(),
                 entity.getRequestStatus(),
-                TaskResourceFromEntityAssembler.toResourceFromEntity(taskDetailsResource, memberWithUserResource)
+                TaskResourceFromEntityAssembler.toResourceFromEntity(taskDetailsResource)
         );
 
     }

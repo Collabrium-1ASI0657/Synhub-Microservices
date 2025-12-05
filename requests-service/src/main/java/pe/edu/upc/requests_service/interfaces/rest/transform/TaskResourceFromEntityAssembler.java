@@ -2,10 +2,20 @@ package pe.edu.upc.requests_service.interfaces.rest.transform;
 
 import pe.edu.upc.requests_service.application.clients.tasks.resources.MemberWithUserResource;
 import pe.edu.upc.requests_service.application.clients.tasks.resources.TaskDetailsResource;
+import pe.edu.upc.requests_service.interfaces.rest.resources.TaskMemberResource;
 import pe.edu.upc.requests_service.interfaces.rest.resources.TaskResource;
 
 public class TaskResourceFromEntityAssembler {
-    public static TaskResource toResourceFromEntity(TaskDetailsResource resource, MemberWithUserResource memberWithUserResource){
+    public static TaskResource toResourceFromEntity(TaskDetailsResource resource){
+        var memberResource = resource.member() != null
+                ? new TaskMemberResource(
+                resource.member().id(),
+                resource.member().name(),
+                resource.member().surname(),
+                resource.member().urlImage()
+        )
+                : null;
+
         return new TaskResource(
                 resource.id(),
                 resource.title(),
@@ -14,7 +24,7 @@ public class TaskResourceFromEntityAssembler {
                 resource.createdAt(),
                 resource.updatedAt(),
                 resource.status(),
-                TaskMemberResourceFromEntityAssembler.toResourceFromEntity(memberWithUserResource),
+                memberResource,
                 resource.groupId()
         );
     }

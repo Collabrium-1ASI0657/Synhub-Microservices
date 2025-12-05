@@ -33,7 +33,7 @@ public class RequestCommandServiceImpl implements RequestCommandService {
             throw new IllegalArgumentException("Invalid request type");
         }
 
-        var task = taskServiceClient.fetchTaskDetailsById(command.taskId());
+        var task = taskServiceClient.fetchTaskById(command.taskId());
 
         if (task.isEmpty())
             throw new IllegalArgumentException("Task with id " + command.taskId() + " does not exist");

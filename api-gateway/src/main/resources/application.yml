@@ -39,6 +39,9 @@ spring:
           uri: lb://requests-service
           predicates:
             - Path=/requests/**
+          filters:
+            - StripPrefix=1
+
         # METRICS service - privado
         - id: metrics-service
           uri: lb://metrics-service
