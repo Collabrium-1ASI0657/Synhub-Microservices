@@ -50,8 +50,8 @@ public class RequestController {
             return ResponseEntity.notFound().build();
         }
 
-        var task = this.taskServiceClient.fetchTaskDetailsById(taskId);
-        if (task.isEmpty() || !task.get().memberId().equals(member.get().id())) {
+        var task = this.taskServiceClient.fetchTaskDetailsById(taskId, authorizationHeader);
+        if (task.isEmpty() || !task.get().member().id().equals(member.get().id())) {
             return ResponseEntity.badRequest().build();
         }
 
@@ -66,7 +66,7 @@ public class RequestController {
         if (optionalRequest.isEmpty())
             return ResponseEntity.badRequest().build();
 
-        var requestResource = RequestResourceFromEntityAssembler.toResourceFromEntity(optionalRequest.get(), task.get(), member.get());
+        var requestResource = RequestResourceFromEntityAssembler.toResourceFromEntity(optionalRequest.get(), task.get());
         return new ResponseEntity<>(requestResource, HttpStatus.CREATED);
     }
 
@@ -77,18 +77,18 @@ public class RequestController {
         var getRequestsByTaskIdQuery = new GetRequestsByTaskIdQuery(taskId);
         var requests = this.requestQueryService.handle(getRequestsByTaskIdQuery);
 
-        var taskOpt = this.taskServiceClient.fetchTaskDetailsById(taskId);
+        var taskOpt = this.taskServiceClient.fetchTaskDetailsById(taskId, authorizationHeader);
         if (taskOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
 
-        var memberOpt = this.taskServiceClient.fetchMemberByMemberId(taskOpt.get().memberId(), authorizationHeader);
+        var memberOpt = this.taskServiceClient.fetchMemberByMemberId(taskOpt.get().member().id(), authorizationHeader);
         if (memberOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
 
         var requestResources = requests.stream()
-                .map(request -> RequestResourceFromEntityAssembler.toResourceFromEntity(request, taskOpt.get(), memberOpt.get()))
+                .map(request -> RequestResourceFromEntityAssembler.toResourceFromEntity(request, taskOpt.get()))
                 .collect(Collectors.toList());
         return ResponseEntity.ok(requestResources);
     }
@@ -103,16 +103,16 @@ public class RequestController {
         if (request.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
-        var taskOpt = this.taskServiceClient.fetchTaskDetailsById(taskId);
+        var taskOpt = this.taskServiceClient.fetchTaskDetailsById(taskId, authorizationHeader);
         if (taskOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
-        var memberOpt = this.taskServiceClient.fetchMemberByMemberId(taskOpt.get().memberId(), authorizationHeader);
+        var memberOpt = this.taskServiceClient.fetchMemberByMemberId(taskOpt.get().member().id(), authorizationHeader);
         if (memberOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
 
-        var requestResource = RequestResourceFromEntityAssembler.toResourceFromEntity(request.get(), taskOpt.get(), memberOpt.get());
+        var requestResource = RequestResourceFromEntityAssembler.toResourceFromEntity(request.get(), taskOpt.get());
         return ResponseEntity.ok(requestResource);
     }
 
