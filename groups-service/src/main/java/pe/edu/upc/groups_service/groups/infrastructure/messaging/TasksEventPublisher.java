@@ -3,6 +3,7 @@ package pe.edu.upc.groups_service.groups.infrastructure.messaging;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 import pe.edu.upc.groups_service.groups.domain.model.events.AcceptInvitationEvent;
+import pe.edu.upc.groups_service.groups.domain.model.events.GroupDeletedEvent;
 import pe.edu.upc.groups_service.groups.domain.model.events.RemoveMemberEvent;
 import pe.edu.upc.groups_service.groups.infrastructure.config.RabbitMQConfig;
 
@@ -34,5 +35,15 @@ public class TasksEventPublisher {
         RabbitMQConfig.ROUTING_KEY_MEMBER_REMOVED,
         event
     );
+  }
+
+  // Evento: un grupo es eliminado
+  public void publishGroupDeleted(Long groupId) {
+    GroupDeletedEvent event = new GroupDeletedEvent(groupId);
+
+    rabbitTemplate.convertAndSend(
+        RabbitMQConfig.TASKS_EXCHANGE_NAME,
+        RabbitMQConfig.ROUTING_KEY_GROUP_DELETED,
+        event);
   }
 }
