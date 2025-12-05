@@ -2,6 +2,8 @@ package pe.edu.upc.requests_service.interfaces.rest;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -38,8 +40,10 @@ public class GroupRequestController {
 
     @GetMapping("/leader/group/requests")
     @Operation(summary = "Get all requests from a group", description = "Get all requests from a group")
-    public ResponseEntity<List<RequestResource>> getAllRequestsFromGroup(@RequestHeader("X-Username") String username,
-                                                                         @RequestHeader("Authorization") String authorizationHeader) {
+    public ResponseEntity<List<RequestResource>> getAllRequestsFromGroup(
+            @RequestHeader("X-Username") String username,
+            @RequestHeader("Authorization") String authorizationHeader) {
+
         var leader = groupServiceClient.fetchLeaderByUsername(username, authorizationHeader);
         if (leader.isEmpty()) {
             return ResponseEntity.notFound().build();
@@ -53,23 +57,36 @@ public class GroupRequestController {
         var tasks = taskServiceClient.fetchAllTasksByGroupId(group.get().id(), authorizationHeader);
 
         var requests = tasks.stream()
-            .flatMap(task -> {
-                var member = taskServiceClient.fetchMemberByMemberId(task.memberId(), authorizationHeader);
-                if (member.isEmpty()) {
-                    return Stream.empty();
-                }
-
-                var getRequestsByTaskIdQuery = new GetRequestsByTaskIdQuery(task.id());
-                return requestQueryService.handle(getRequestsByTaskIdQuery)
-                        .stream()
-                        .map(r -> RequestResourceFromEntityAssembler.toResourceFromEntity(r, task, member.get()));
-            })
-            .collect(Collectors.toList());
+                .flatMap(task -> {
+                    var getRequestsByTaskIdQuery = new GetRequestsByTaskIdQuery(task.id());
+                    return requestQueryService.handle(getRequestsByTaskIdQuery)
+                            .stream()
+                            .map(r -> RequestResourceFromEntityAssembler.toResourceFromEntity(r, task));
+                })
+                .collect(Collectors.toList());
 
         return ResponseEntity.ok(requests);
-
     }
 
+    @GetMapping("/member/group/requests")
+    @Operation(summary = "Get all requests from member", description = "Get all requests from member")
+    public ResponseEntity<List<RequestResource>> getAllRequestsFromMember(
+            @RequestHeader("X-Username") String username,
+            @RequestHeader("Authorization") String authorizationHeader) {
+        var member = taskServiceClient.fetchMemberByUsername(username, authorizationHeader);
+        if (member.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
 
-
+        var tasks = taskServiceClient.fetchAllTasksByMemberId(member.get().id(), authorizationHeader);
+        var requests = tasks.stream()
+                .flatMap(task -> {
+                    var getRequestsByTaskIdQuery = new GetRequestsByTaskIdQuery(task.id());
+                    return requestQueryService.handle(getRequestsByTaskIdQuery)
+                            .stream()
+                            .map(r -> RequestResourceFromEntityAssembler.toResourceFromEntity(r, task));
+                })
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(requests);
+    }
 }
