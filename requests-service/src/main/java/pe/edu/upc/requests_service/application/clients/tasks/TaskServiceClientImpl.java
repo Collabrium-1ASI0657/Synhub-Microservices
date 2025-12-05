@@ -7,7 +7,9 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import pe.edu.upc.requests_service.application.clients.tasks.resources.MemberWithUserResource;
 import pe.edu.upc.requests_service.application.clients.tasks.resources.TaskDetailsResource;
+import pe.edu.upc.requests_service.application.clients.tasks.resources.TaskSimpleResource;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -21,12 +23,39 @@ public class TaskServiceClientImpl implements TaskServiceClient{
     }
 
     @Override
-    public Optional<TaskDetailsResource> fetchTaskDetailsById(Long taskId) {
+    public Optional<TaskSimpleResource> fetchTaskById(Long taskId) {
         try {
             var request = webClient.get()
                     .uri(uriBuilder -> uriBuilder
                             .path("/tasks/details/{taskId}")
                             .build(taskId));
+
+
+            TaskSimpleResource taskResource = request
+                    .retrieve()
+                    .bodyToMono(TaskSimpleResource.class)
+                    .block();
+
+            return Optional.ofNullable(taskResource);
+        } catch (WebClientResponseException e) {
+            if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
+                return Optional.empty();
+            }
+        }
+        return Optional.empty();
+    }
+
+    @Override
+    public Optional<TaskDetailsResource> fetchTaskDetailsById(Long taskId, String authorizationHeader) {
+        try {
+            var request = webClient.get()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/tasks/{taskId}")
+                            .build(taskId));
+
+            if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+                request = request.header("Authorization", authorizationHeader);
+            }
 
             TaskDetailsResource taskDetailsResource = request
                     .retrieve()
@@ -102,29 +131,60 @@ public class TaskServiceClientImpl implements TaskServiceClient{
     }
 
     @Override
-    public Optional<TaskDetailsResource> fetchAllTasksByGroupId(Long groupId, String authorizationHeader) {
+    public List<TaskDetailsResource> fetchAllTasksByGroupId(Long groupId, String authorizationHeader) {
         try {
             var request = webClient.get()
                     .uri(uriBuilder -> uriBuilder
-                            .path("/tasks/group/{groupId}")
-                            .build(groupId));
+                            .path("/tasks")
+                            .queryParam("groupId", groupId)
+                            .build());
 
             if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
                 request = request.header("Authorization", authorizationHeader);
             }
 
-            TaskDetailsResource taskDetailsResource = request
+            List<TaskDetailsResource> taskDetailsResource = request
                     .retrieve()
-                    .bodyToMono(TaskDetailsResource.class)
+                    .bodyToFlux(TaskDetailsResource.class)
+                    .collectList()
                     .block();
 
-            return Optional.ofNullable(taskDetailsResource);
+            return taskDetailsResource != null ? taskDetailsResource : List.of();
 
         } catch (WebClientResponseException e) {
             if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
-                return Optional.empty();
+                return List.of();
             }
         }
-        return Optional.empty();
+        return List.of();
     }
+
+    @Override
+    public List<TaskDetailsResource> fetchAllTasksByMemberId(Long memberId, String authorizationHeader) {
+        try {
+            var request = webClient.get()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/members/{memberId}/tasks")
+                            .build(memberId));
+
+            if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+                request = request.header("Authorization", authorizationHeader);
+            }
+
+            List<TaskDetailsResource> taskDetailsResource = request
+                    .retrieve()
+                    .bodyToFlux(TaskDetailsResource.class)
+                    .collectList()
+                    .block();
+
+            return taskDetailsResource != null ? taskDetailsResource : List.of();
+
+        } catch (WebClientResponseException e) {
+            if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
+                return List.of();
+            }
+        }
+        return List.of();
+    }
+
 }
